@@ -1175,6 +1175,14 @@ static BMOpDefine bmo_convex_hull_def = {
 	0
 };
 
+static BMOpDefine bmo_spr_def = {
+	"spr",
+	{
+	 {0} /* null-terminating sentinel */},
+	bmo_spr_exec,
+	0
+};
+
 BMOpDefine *opdefines[] = {
 	&bmo_split_def,
 	&bmo_spin_def,
@@ -1245,6 +1253,7 @@ BMOpDefine *opdefines[] = {
 	&bmo_wireframe_def,
 	&bmo_vertex_slide_def,
 	&bmo_convex_hull_def,
+	&bmo_spr_def,
 };
 
 int bmesh_total_ops = (sizeof(opdefines) / sizeof(void *));

@@ -166,6 +166,7 @@ void ED_operatortypes_mesh(void)
 	WM_operatortype_append(MESH_OT_edge_split);
 
 	WM_operatortype_append(MESH_OT_convex_hull);
+	WM_operatortype_append(MESH_OT_small_polygon_reconnection);
 
 #ifdef WITH_GAMEENGINE
 	WM_operatortype_append(MESH_OT_navmesh_make);

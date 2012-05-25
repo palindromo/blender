@@ -102,5 +102,6 @@ void bmo_solidify_face_region_exec(BMesh *bm, BMOperator *op);
 void bmo_inset_exec(BMesh *bm, BMOperator *op);
 void bmo_wireframe_exec(BMesh *bm, BMOperator *op);
 void bmo_convex_hull_exec(BMesh *bm, BMOperator *op);
+void bmo_spr_exec(BMesh *bm, BMOperator *op);
 
 #endif /* __BMESH_OPERATORS_PRIVATE_H__ */

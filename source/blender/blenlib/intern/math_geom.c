@@ -420,7 +420,7 @@ int isect_line_sphere_v3(const float l1[3], const float l2[3],
 	/* adapted for use in blender by Campbell Barton - 2011
 	 *
 	 * atelier iebele abel - 2001
-	 * atelier@iebele.nl
+	 * atelier@iebele.nlup
 	 * http://www.iebele.nl
 	 *
 	 * sphere_line_intersection function adapted from:

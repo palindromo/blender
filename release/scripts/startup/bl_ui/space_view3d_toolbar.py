@@ -150,6 +150,8 @@ class VIEW3D_PT_tools_meshedit(View3DPanel, Panel):
         props = row.operator("mesh.knife_tool", text="Select")
         props.use_occlude_geometry = False
         props.only_selected = True
+        # XXX: just for testing, do not commit like this
+        col.operator("mesh.small_polygon_reconnection")
 
         col = layout.column(align=True)
         col.label(text="Remove:")

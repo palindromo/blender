@@ -5097,3 +5097,39 @@ void MESH_OT_convex_hull(wmOperatorType *ot)
 
 	join_triangle_props(ot);
 }
+
+static int edbm_small_polygon_reconnection_exec(bContext *C, wmOperator *op)
+{
+	Object *obedit = CTX_data_edit_object(C);
+	BMEditMesh *em = BMEdit_FromObject(obedit);
+	BMOperator bmop;
+
+	/* TODO */
+
+	EDBM_op_init(em, &bmop, op, "spr");
+	BMO_op_exec(em->bm, &bmop);
+
+	if (!EDBM_op_finish(em, &bmop, op, TRUE)) {
+		return OPERATOR_CANCELLED;
+	}
+	else {
+		EDBM_update_generic(C, em, TRUE);
+		EDBM_selectmode_flush(em);
+		return OPERATOR_FINISHED;
+	}
+}
+
+void MESH_OT_small_polygon_reconnection(wmOperatorType *ot)
+{
+	/* identifiers */
+	ot->name = "Small Polygon Reconnection";
+	//ot->description = "";
+	ot->idname = "MESH_OT_small_polygon_reconnection";
+
+	/* api callbacks */
+	ot->exec = edbm_small_polygon_reconnection_exec;
+	ot->poll = EM_view3d_poll;
+
+	/* flags */
+	ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
+}
