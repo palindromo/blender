@@ -18,18 +18,20 @@
 
 typedef int SprCoord;
 
+/* Constant data set while building the SPR mesh, all copies can then
+   directly re-use this data */
 typedef struct {
 	/* Projected coordinates */
 	SprCoord co[2];
 
-	/* Source vertex */
+	/* Source BMesh vertex */
 	BMVert *original_bm_vert;
 
+	unsigned num_exterior_faces;	
+} SprInputVert;
+
+typedef struct {
 	unsigned totface;
-	unsigned num_exterior_faces;
-
-	unsigned on_boundary;
-
 	unsigned finished;
 } SprVert;
 
@@ -54,6 +56,7 @@ typedef struct {
 } SprPoly;
 
 typedef struct {
+	SprInputVert *input_verts;
 	SprVert *verts;
 	SprPoly *polys;
 	SprQuad *quads;
@@ -77,6 +80,16 @@ typedef struct {
 	unsigned num_extraordinary_vertices;
 	unsigned num_steiner_points;
 } SprMesh;
+
+typedef struct {
+	/* Limit on the total number of extraordinary vertices in the
+	   output */
+	unsigned max_extraordinary_verts;
+	/* Limit on the total number of loose vertices that are used */
+	unsigned max_steiner_points;
+	/* Limit each vertex from going above this many attached faces */
+	unsigned max_degree;
+} SprControl;
 
 static const float spr_maxco_f = 1000.0f;
 static const SprCoord spr_maxco = 1000;
@@ -105,13 +118,15 @@ void print_quad(const unsigned quad[4])
 
 /* General TODO: check for small & frequent memory allocs */
 
-static SprMesh *spr_mesh_create(unsigned num_verts,
+static SprMesh *spr_mesh_create(SprInputVert *input_verts,
+								unsigned num_verts,
 								unsigned max_quads,
 								unsigned max_polys)
 {
 	const unsigned edge_size = num_verts * num_verts;
 	SprMesh *mesh = MEM_callocN(sizeof(SprMesh), "SprMesh");
 
+	mesh->input_verts = input_verts;
 	mesh->verts = MEM_callocN(sizeof(SprVert) * num_verts, "SprVert");
 	mesh->quads = MEM_callocN(sizeof(SprQuad) * max_quads, "SprQuad");
 	mesh->polys = MEM_callocN(sizeof(SprPoly) * max_polys, "SprPoly");
@@ -154,7 +169,8 @@ static SprMesh *spr_mesh_copy(const SprMesh *src)
 	unsigned i;
 
 	/* Add space for one new quad and two new polys */
-	SprMesh *dst = spr_mesh_create(src->num_verts,
+	SprMesh *dst = spr_mesh_create(src->input_verts,
+								   src->num_verts,
 								   src->num_quads + 1,
 								   src->num_polys + 2);
 
@@ -305,8 +321,10 @@ static int spr_is_quad_usable(SprMesh *mesh, const unsigned quad[4])
 		/* TODO: check verts */
 
 		/* Check for concavity */		
-		if (!is_quad_convex(mesh->verts[quad[0]].co, mesh->verts[quad[1]].co,
-							mesh->verts[quad[2]].co, mesh->verts[quad[3]].co))
+		if (!is_quad_convex(mesh->input_verts[quad[0]].co,
+							mesh->input_verts[quad[1]].co,
+							mesh->input_verts[quad[2]].co,
+							mesh->input_verts[quad[3]].co))
 		{
 			return FALSE;
 		}
@@ -373,8 +391,8 @@ static int spr_polygon_contains_point(const SprMesh *mesh,
 		   starting at co and extending along the +x axis (arbitrary
 		   choice) */
 		if (spr_isect_seg_seg(co, end,
-							  mesh->verts[v].co,
-							  mesh->verts[next].co))
+							  mesh->input_verts[v].co,
+							  mesh->input_verts[next].co))
 		{
 			num_isect++;
 		}
@@ -448,7 +466,7 @@ static int spr_mesh_subtract_quad(SprMesh *mesh, unsigned poly_index,
 						for (l = 0; l < p_orig.num_loose_verts; l++) {
 							unsigned offset = p_orig.num_boundary_verts + l;
 							unsigned v3 = p_orig.verts[offset];
-							const SprCoord *co = mesh->verts[v3].co;
+							const SprCoord *co = mesh->input_verts[v3].co;
 							int found = FALSE;
 							unsigned m;
 
@@ -511,7 +529,9 @@ static int spr_mesh_subtract_quad(SprMesh *mesh, unsigned poly_index,
 	return TRUE;
 }
 
-static int spr_mesh_add_quad(SprMesh *mesh, unsigned poly_index,
+static int spr_mesh_add_quad(SprMesh *mesh,
+							 const SprControl *control,
+							 unsigned poly_index,
 							 const unsigned quad[4])
 {
 	SprQuad *q;
@@ -558,6 +578,13 @@ static int spr_mesh_add_quad(SprMesh *mesh, unsigned poly_index,
 		unsigned v_next = quad[(i + 1) % 4];
 		unsigned v = quad[i];
 		mesh->verts[v].totface++;
+
+		if ((mesh->verts[v].totface +
+			 mesh->input_verts[v].num_exterior_faces) >
+			control->max_degree)
+		{
+			return FALSE;
+		}
 		
 		if (spr_edge_on_boundary(mesh, v_prev, v) &&
 			spr_edge_on_boundary(mesh, v, v_next))
@@ -589,8 +616,10 @@ static void spr_mesh_count_extraordinary_verts(SprMesh *mesh)
 	
 	mesh->num_extraordinary_vertices = 0;
 	for (i = 0; i < mesh->num_verts; i++) {
-		SprVert *v = &mesh->verts[i];
-		unsigned num_faces = v->num_exterior_faces + v->totface;
+		const SprInputVert *iv = &mesh->input_verts[i];
+		const SprVert *v = &mesh->verts[i];
+		unsigned num_faces = iv->num_exterior_faces + v->totface;
+		
 		if (num_faces != 0 && (num_faces > 4 || (v->finished && num_faces != 4)))
 			mesh->num_extraordinary_vertices++;
 	}
@@ -717,8 +746,7 @@ void spr_mesh_print(const SprMesh *mesh)
 }
 
 static void spr_step(SprMesh *mesh, SprMesh **candidate,
-					 unsigned max_extraordinary_verts,
-					 unsigned max_steiner_points);
+					 const SprControl *control);
 
 typedef enum {
 	SPR_QUAD_CONCAVE,
@@ -748,8 +776,7 @@ static SprResult spr_try_quad(SprMesh *mesh,
 							  SprMesh **candidate,
 							  const unsigned quad[4],
 							  unsigned poly_index,
-							  unsigned max_extraordinary_verts,
-							  unsigned max_steiner_points,
+							  const SprControl *control,
 							  unsigned num_new_steiner_points)
 {
 	if (mesh->num_quads == 7 &&
@@ -768,7 +795,7 @@ static SprResult spr_try_quad(SprMesh *mesh,
 	if (spr_is_quad_usable(mesh, quad)) {
 		SprMesh *new_mesh = spr_mesh_copy(mesh);
 
-		if (!spr_mesh_add_quad(new_mesh, poly_index, quad)) {
+		if (!spr_mesh_add_quad(new_mesh, control, poly_index, quad)) {
 			/* The new quad made it impossible to find
 			   any candidates on this path */
 			if (spr_debug > 1) {
@@ -783,7 +810,7 @@ static SprResult spr_try_quad(SprMesh *mesh,
 		  spr_mesh_print(new_mesh);*/
 
 		new_mesh->num_steiner_points += num_new_steiner_points;
-		if (new_mesh->num_steiner_points > max_steiner_points) {
+		if (new_mesh->num_steiner_points > control->max_steiner_points) {
 			if (spr_debug > 1) {
 				print_depth(new_mesh);
 				printf("quad rejected (exceeds max steiner points)\n");
@@ -794,7 +821,7 @@ static SprResult spr_try_quad(SprMesh *mesh,
 
 		spr_mesh_count_extraordinary_verts(new_mesh);
 		if (new_mesh->num_extraordinary_vertices >=
-			max_extraordinary_verts)
+			control->max_extraordinary_verts)
 		{
 			if (spr_debug > 1) {
 				print_depth(new_mesh);
@@ -845,8 +872,7 @@ static SprResult spr_try_quad(SprMesh *mesh,
 			return SPR_CANDIDATE_FOUND;
 		}
 		else {
-			spr_step(new_mesh, candidate, max_extraordinary_verts,
-					 max_steiner_points);
+			spr_step(new_mesh, candidate, control);
 			spr_mesh_free(new_mesh);
 		}
 
@@ -902,8 +928,7 @@ static unsigned spr_mesh_priority_polygon(const SprMesh *mesh)
 }
 
 static void spr_step(SprMesh *mesh, SprMesh **candidate,
-					 unsigned max_extraordinary_verts,
-					 unsigned max_steiner_points)
+					 const SprControl *control)
 {
 	/* XXX: testing */
 	if (spr_combinations > spr_max_combinations) {
@@ -912,7 +937,7 @@ static void spr_step(SprMesh *mesh, SprMesh **candidate,
 		return;
 	}
 	if (*candidate)
-		;//return;
+		//return;
 
 	if ((*candidate) && ((*candidate)->num_extraordinary_vertices == 0))
 		return;
@@ -979,8 +1004,7 @@ static void spr_step(SprMesh *mesh, SprMesh **candidate,
 				}
 					
 				if (spr_try_quad(mesh, candidate, quad, poly_index,
-								 max_extraordinary_verts,
-								 max_steiner_points,
+								 control,
 								 num_new_steiner_points) ==
 					SPR_CANDIDATE_FOUND)
 				{
@@ -1208,26 +1232,28 @@ static int bm_vert_is_manifold_and_not_on_boundary(BMVert *v)
 	return TRUE;
 }
 
-static void spr_mesh_add_bm_vert(SprMesh *spr_mesh, BMVert *v,
+static void spr_mesh_add_bm_vert(SprMesh *spr_mesh,
+								 SprInputVert *input_verts,
+								 BMVert *v,
 								 const float normal[3],
 								 const float offset[2],
 								 const float scale[2],
 								 int on_boundary,
 								 int num_boundary_verts)
 {
-	SprVert *spr_vert = &spr_mesh->verts[spr_mesh->num_verts];
-	SprPoly *p = &spr_mesh->polys[0];
 	int v_index = spr_mesh->num_verts;
+	SprInputVert *spr_input_vert = &input_verts[v_index];
+	SprVert *spr_vert = &spr_mesh->verts[v_index];
+	SprPoly *p = &spr_mesh->polys[0];
 
 	BM_elem_index_set(v, v_index); /* set_dirty! */
 			
-	spr_final_coord(spr_vert->co, v->co, normal,
+	spr_final_coord(spr_input_vert->co, v->co, normal,
 					offset, scale);
 
-	spr_vert->original_bm_vert = v;
+	spr_input_vert->original_bm_vert = v;
 	spr_vert->totface = 0;
-	spr_vert->on_boundary = on_boundary;
-	spr_vert->num_exterior_faces = 0;
+	spr_input_vert->num_exterior_faces = 0;
 	
 	if (on_boundary) {
 		BMIter iter;
@@ -1236,7 +1262,7 @@ static void spr_mesh_add_bm_vert(SprMesh *spr_mesh, BMVert *v,
 		/* Count number of adjacent marked faces */
 		BM_ITER_ELEM (f, &iter, v, BM_FACES_OF_VERT) {
 			if (!BM_elem_flag_test(f, BM_ELEM_TAG))
-				spr_vert->num_exterior_faces++;
+				spr_input_vert->num_exterior_faces++;
 		}
 		
 		p->verts[p->num_boundary_verts] = v_index;
@@ -1252,8 +1278,8 @@ static void spr_mesh_add_bm_vert(SprMesh *spr_mesh, BMVert *v,
 
 static int spr_vert_cmp(const void *a_v, const void *b_v)
 {
-	const SprVert *a = a_v;
-	const SprVert *b = b_v;
+	const SprInputVert *a = a_v;
+	const SprInputVert *b = b_v;
 
 	if (a->co[0] < b->co[0])
 		return -1;
@@ -1271,6 +1297,7 @@ static SprMesh *spr_mesh_create_from_bm_region(BMVert **boundary_verts,
 {
 	GHashIterator gh_iter;
 	SprMesh *spr_mesh;
+	SprInputVert *spr_input_verts;
 	float normal[3];
 	float bb_min[2];
 	float bb_max[2];
@@ -1308,7 +1335,9 @@ static SprMesh *spr_mesh_create_from_bm_region(BMVert **boundary_verts,
 
 	/* Create SPR mesh */
 	num_verts = num_boundary_verts + BLI_ghash_size(loose_verts);
-	spr_mesh = spr_mesh_create(num_verts, 0, 1);
+	spr_input_verts = MEM_callocN(sizeof(SprInputVert) * num_verts,
+								  "SprInputVerts");
+	spr_mesh = spr_mesh_create(spr_input_verts, num_verts, 0, 1);
 	spr_mesh->num_polys = 1;
 	spr_mesh->polys[0].verts = MEM_callocN(sizeof(unsigned) * num_verts,
 										   "SprPoly.verts");
@@ -1316,12 +1345,14 @@ static SprMesh *spr_mesh_create_from_bm_region(BMVert **boundary_verts,
 	/* Copy vertices and assign indices */
 	for (i = 0; i < num_boundary_verts; i++) {
 		spr_mesh_add_bm_vert(spr_mesh,
+							 spr_input_verts,
 							 boundary_verts[i],
 							 normal, offset, scale,
 							 TRUE, num_boundary_verts);
 	}
 	GHASH_ITER (gh_iter, loose_verts) {
 		spr_mesh_add_bm_vert(spr_mesh,
+							 spr_input_verts,
 							 BLI_ghashIterator_getKey(&gh_iter),
 							 normal, offset, scale,
 							 FALSE, num_boundary_verts);
@@ -1335,11 +1366,11 @@ static SprMesh *spr_mesh_create_from_bm_region(BMVert **boundary_verts,
 		  spr_vert_cmp);
 
 	for (i = 0; i < spr_mesh->num_verts; i++) {
-		const SprVert *spr_vert = &spr_mesh->verts[i];
-		const BMVert *v = spr_vert->original_bm_vert;
+		const SprInputVert *spr_input_vert = &spr_mesh->input_verts[i];
+		const BMVert *v = spr_input_vert->original_bm_vert;
 		printf("SprVert %d (%.2f, %.2f, %.2f) -> (%d, %d)\n",
 			   i, v->co[0], v->co[1], v->co[2],
-			   spr_vert->co[0], spr_vert->co[1]);
+			   spr_input_vert->co[0], spr_input_vert->co[1]);
 	}
 	#endif
 
@@ -1385,17 +1416,20 @@ static int spr_patch_update(BMesh *bm,
 							int num_boundary_verts,
 							GHash *loose_verts)
 {
+	SprControl control;
 	SprMesh *input, *candidate;
 	int modified = FALSE;
-	unsigned max_extraordinary_verts;
 	unsigned i;
 
-	max_extraordinary_verts =
+	/* XXX: not sure about this yet */
+	control.max_degree = 6;
+
+	control.max_extraordinary_verts =
 		spr_max_extraordinary_verts(boundary_verts,
 									num_boundary_verts,
 									loose_verts);
 
-	printf("max_extraordinary_verts=%d\n", max_extraordinary_verts);
+	printf("max_extraordinary_verts=%d\n", control.max_extraordinary_verts);
 					
 	bm->elem_index_dirty |= BM_VERT;
 	input = spr_mesh_create_from_bm_region(boundary_verts,
@@ -1411,7 +1445,8 @@ static int spr_patch_update(BMesh *bm,
 	   needed */
 	for (i = 0; i < input->polys[0].num_loose_verts; i++) {
 		printf("steiner points = %d\n", i);
-		spr_step(input, &candidate, max_extraordinary_verts, i);
+		control.max_steiner_points = i;
+		spr_step(input, &candidate, &control);
 
 		if (candidate && candidate->num_extraordinary_vertices == 0)
 			break;
@@ -1438,7 +1473,7 @@ static int spr_patch_update(BMesh *bm,
 			BMVert *verts[4];
 			int j;
 			for (j = 0; j < 4; j++) {
-				verts[j] = candidate->verts[q->verts[j]].original_bm_vert;
+				verts[j] = candidate->input_verts[q->verts[j]].original_bm_vert;
 			}
 			BM_face_create_quad_tri_v(bm, verts, 4, NULL, FALSE);
 		}
@@ -1448,6 +1483,7 @@ static int spr_patch_update(BMesh *bm,
 	else
 		printf("%s: no candidate found\n", __func__);
 
+	MEM_freeN(input->input_verts);
 	spr_mesh_free(input);
 
 	return modified;
