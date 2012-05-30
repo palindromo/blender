@@ -33,13 +33,6 @@ typedef struct {
 	unsigned finished;
 } SprVert;
 
-/*typedef struct {
-	unsigned verts[2];
-	//unsigned faces[2];
-	unsigned totface;
-	unsigned on_boundary;
-	} SprEdge;*/
-
 /* Output quadrilateral
  * 
  * Note: winding order is not important during SPR, normals will get
@@ -228,6 +221,14 @@ static int spr_edge_num_faces(const SprMesh *mesh,
 		return 0;
 }
 
+BLI_INLINE int spr_edge_has_faces(const SprMesh *mesh,
+								  unsigned v1, unsigned v2)
+{
+	const unsigned bi = spr_edge_bitmap_index(mesh, v1, v2);
+	
+	return BLI_BITMAP_GET(mesh->edge_has_face1, bi);
+}
+
 BLI_INLINE void spr_copy_co_co(SprCoord dst[2], const SprCoord src[2])
 {
 	dst[0] = src[0];
@@ -284,155 +285,6 @@ int spr_isect_seg_seg(const SprCoord a[2], const SprCoord b[2],
 	return FALSE;
 }
 
-
-#if 0
-static void shrink_v22_v2_v2(SprCoord shrink[2][2],
-							 const SprCoord a[2], const SprCoord b[2])
-{
-	const float factor = 0.0001;
-	SprCoord dir[2];
-
-	spr_copy_co_co(shrink[0], a);
-	spr_copy_co_co(shrink[1], b);
-
-	spr_sub_co_co_co(dir, b, a);
-	mul_v2_fl(dir, factor);
-
-	add_v2_v2(shrink[0], dir);
-	sub_v2_v2(shrink[1], dir);
-}
-#endif
-
-#if 0
-static int test_lines_overlap(const SprMesh *mesh,
-							  unsigned a1, unsigned a2,
-							  unsigned b1, unsigned b2)
-{
-	/* Ignore if input edges are identical */
-	if (a1 != b1 || a1 != b2 || a2 != b1 || b2 != b2) {
-		SprCoord shrink1[2][2], shrink2[2][2];
-		float vi[2];
-
-		/* Shrink the lines down a little to avoid
-		   intersection match at the endpoints */
-		shrink_v22_v2_v2(shrink1,
-						 mesh->verts[a1].co,
-						 mesh->verts[a2].co);
-		shrink_v22_v2_v2(shrink2,
-						 mesh->verts[b1].co,
-						 mesh->verts[b2].co);
-				
-		if (isect_seg_seg_v2_point(shrink1[0],
-								   shrink1[1],
-								   shrink2[0],
-								   shrink2[1], vi) == 1)
-		{
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-#endif
-#if 0
-static int test_quads_overlapping(const SprMesh *mesh,
-								  const unsigned q1[4],
-								  const unsigned q2[4])
-{
-	int i, j;
-	
-	/* Not sure how best to do this, for now just checking each edge
-	   for intersection */
-	/* TODO: need to at least add a full containment test */
-	
-	for (i = 0; i < 4; i++) {
-		unsigned e1[2] = {q1[i], q1[(i + 1) % 4]};
-		for (j = 0; j < 4; j++) {
-			unsigned e2[2] = {q2[j], q2[(j + 1) % 4]};
-
-			if (test_lines_overlap(mesh, e1[0], e1[1], e2[0], e2[1]))
-			{
-				return TRUE;
-			}
-		}
-	}
-
-	return FALSE;
-}
-#endif
-
-static int test_quad_line_overlap(const SprMesh *mesh,
-								  const unsigned q[4],
-								  unsigned v1, unsigned v2)
-{
-	int i;
-	
-	for (i = 0; i < 4; i++) {
-		unsigned qe[2] = {q[i], q[(i + 1) % 4]};
-
-		if (spr_isect_seg_seg(mesh->verts[qe[0]].co,
-							  mesh->verts[qe[1]].co,
-							  mesh->verts[v1].co,
-							  mesh->verts[v2].co))
-		//if (test_lines_overlap(mesh, qe[0], qe[1], v1, v2))
-		{
-			/*printf ("blah=%d\n", spr_isect_seg_seg(mesh->verts[qe[0]].co,
-									  mesh->verts[qe[1]].co,
-									  mesh->verts[v1].co,
-									  mesh->verts[v2].co));*/
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
-#if 0
-static int spr_is_existing_edge_usable(const SprMesh *mesh,
-									   unsigned v1, unsigned v2)
-{
-	const int e_on_boundary = spr_edge_on_boundary(mesh, v1, v2);
-	
-	if (e_on_boundary && (spr_edge_num_faces(mesh, v1, v2) > 0)) {
-		return FALSE;
-	}
-	else if ((!e_on_boundary) && spr_edge_num_faces(mesh, v1, v2) != 1) {
-		return FALSE;
-	}
-	else {
-		int i;
-		for (i = 0; i < mesh->num_verts; i++) {
-			if (test_quad_line_overlap(mesh, mesh->faces[i].verts, v1, v2))
-				return FALSE;
-		}
-		return TRUE;
-	}
-}
-
-static int spr_is_vert_pair_usable(SprMesh *mesh, unsigned v1, unsigned v2)
-{
-	if (spr_edge_exists(mesh, v1, v2)) {
-		/* Edge already exists, check if it's usable */
-		return spr_is_existing_edge_usable(mesh, v1, v2);
-	}
-	else {
-		int i;
-		for (i = 0; i < mesh->totface; i++) {
-			/*if (test_quad_line_overlap(mesh, mesh->faces[i].verts, v1, v2))
-			  return FALSE;*/
-		}
-		
-		//SprVert *verts[2] = {&mesh->verts[v1], &mesh->verts[v2]};
-
-		/* Edge does not exist */
-		//if (verts[0]->on_boundary && verts[1]->on_boundary)
-
-		/* TODO: check if edge crosses the outer boundary */
-		return TRUE;
-	}
-}
-#endif
-
 static int is_quad_convex(const SprCoord v1[2], const SprCoord v2[2],
 						  const SprCoord v3[2], const SprCoord v4[2])
 {
@@ -479,42 +331,6 @@ static int spr_is_edge_finished(const SprMesh *mesh, unsigned v1, unsigned v2)
 	const int on_boundary = spr_edge_on_boundary(mesh, v1, v2);
 	return ((on_boundary && (num_faces == 1)) ||
 			((!on_boundary) && (num_faces == 2)));
-}
-
-static int spr_mesh_test_bad_loops(SprMesh *mesh, unsigned v1, unsigned v2)
-{
-	unsigned i, j;
-
-	for (i = 0; i < mesh->num_verts; i++) {
-		if ((i == v1) || (i == v2))
-			continue;
-
-		/* Look for three-sided loops */
-		if (spr_edge_exists(mesh, v1, i) &&
-			spr_edge_exists(mesh, v2, i)) {
-			/* XXX: Might be wrong, what about floating verts? */
-			return TRUE;
-		}
-
-		/* Look for concave four-sided loops */
-		for (j = 0; j < mesh->num_verts; j++) {
-			if ((i != j) &&
-				spr_edge_exists(mesh, v2, i) &&
-				spr_edge_exists(mesh, i, j) &&
-				spr_edge_exists(mesh, j, v1))
-			{
-				if (!is_quad_convex(mesh->verts[v1].co,
-									mesh->verts[v2].co,
-									mesh->verts[i].co,
-									mesh->verts[j].co))
-				{
-					return TRUE;
-				}
-			}
-		}
-	}
-
-	return FALSE;
 }
 
 static int spr_vert_in_quad(const unsigned quad_verts[4], unsigned v)
@@ -763,36 +579,6 @@ static int spr_mesh_add_quad(SprMesh *mesh, unsigned poly_index,
 			}
 		}
 	}
-
-	return TRUE;
-}
-
-static int spr_mesh_is_candidate(const SprMesh *mesh)
-{
-	unsigned i;
-	
-	/* Check that boundary edges have one face and interior edges have
-	   two faces */
-	for (i = 0; i < mesh->num_verts; i++) {
-		unsigned j;
-		/* XXX: overflow */
-		for (j = i + 1; j < mesh->num_verts; j++) {
-			if (spr_edge_exists(mesh, i, j)) {
-				if (!spr_is_edge_finished(mesh, i, j))
-					return FALSE;
-			}
-		}
-	}
-
-	#if 0
-	/* Check that all interior vertices were used */
-	for (i = 0; i < mesh->num_verts; i++) {
-		const SprVert *v = &mesh->verts[i];
-		if (!v->on_boundary && v->totface == 0) {
-			return FALSE;
-		}
-	}
-	#endif
 
 	return TRUE;
 }
@@ -1087,7 +873,7 @@ static unsigned spr_poly_priority_edge(const SprMesh *mesh,
 		unsigned v1 = poly->verts[i];
 		unsigned v2 = poly->verts[((i + 1) % poly->num_boundary_verts)];
 
-		if (spr_edge_num_faces(mesh, v1, v2) == 1)
+		if (spr_edge_has_faces(mesh, v1, v2))
 			return i;
 	}
 
