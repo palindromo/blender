@@ -27,10 +27,12 @@ set(INC
 	.
 	../blenkernel
 	../blenloader
+	../bmesh
 	../gpu
 	../makesdna
 	../../../intern/ghost
 	../../../intern/guardedalloc
+	../../../intern/rangetree
 )
 
 set(INC_SYS
@@ -79,6 +81,7 @@ set(SRC
 	intern/noise.c
 	intern/path_util.c
 	intern/pbvh.c
+	intern/pbvh_bmesh.c
 	intern/quadric.c
 	intern/rand.c
 	intern/rct.c
