@@ -229,7 +229,7 @@ static int build_hull(SkinOutput *so, Frame **frames, int totframe)
 
 	for (i = 0; i < totframe; i++) {
 		for (j = 0; j < 4; j++) {
-			BM_elem_flag_enable(frames[i]->verts[j], BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, frames[i]->verts[j], BM_ELEM_TAG);
 		}
 	}
 
@@ -249,7 +249,7 @@ static int build_hull(SkinOutput *so, Frame **frames, int totframe)
 	/* Apply face attributes to hull output */
 	BMO_ITER (f, &oiter, bm, &op, "geomout", BM_FACE) {
 		if (so->smd->flag & MOD_SKIN_SMOOTH_SHADING)
-			BM_elem_flag_enable(f, BM_ELEM_SMOOTH);
+			BM_elem_flag_enable(bm, f, BM_ELEM_SMOOTH);
 		f->mat_nr = so->mat_nr;
 	}
 
@@ -297,8 +297,8 @@ static int build_hull(SkinOutput *so, Frame **frames, int totframe)
 			 * edge. Otherwise, give up and mark the frame as
 			 * detached. */
 			if (skin_frame_find_contained_faces(frame, fill_faces)) {
-				BM_elem_flag_enable(fill_faces[0], BM_ELEM_TAG);
-				BM_elem_flag_enable(fill_faces[1], BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, fill_faces[0], BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, fill_faces[1], BM_ELEM_TAG);
 			}
 			else
 				frame->detached = TRUE;
@@ -316,7 +316,7 @@ static int build_hull(SkinOutput *so, Frame **frames, int totframe)
 			}
 		}
 		if (is_wire)
-			BM_elem_flag_enable(e, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, e, BM_ELEM_TAG);
 	}
 
 	BMO_op_finish(bm, &op);
@@ -951,7 +951,7 @@ static void add_poly(SkinOutput *so,
 
 	f = BM_face_create(so->bm, verts, edges, v4 ? 4 : 3, TRUE);
 	if (so->smd->flag & MOD_SKIN_SMOOTH_SHADING)
-		BM_elem_flag_enable(f, BM_ELEM_SMOOTH);
+		BM_elem_flag_enable(so->bm, f, BM_ELEM_SMOOTH);
 	f->mat_nr = so->mat_nr;
 }
 
@@ -1218,7 +1218,7 @@ static void skin_fix_hole_no_good_verts(BMesh *bm, Frame *frame, BMFace *split_f
 
 	/* Extrude the split face */
 	BM_mesh_elem_hflag_disable_all(bm, BM_FACE, BM_ELEM_TAG, FALSE);
-	BM_elem_flag_enable(split_face, BM_ELEM_TAG);
+	BM_elem_flag_enable(bm, split_face, BM_ELEM_TAG);
 	BMO_op_initf(bm, &op, (BMO_FLAG_DEFAULTS & ~BMO_FLAG_RESPECT_HIDE),
 	             "extrude_discrete_faces faces=%hf", BM_ELEM_TAG);
 	BMO_op_exec(bm, &op);
@@ -1241,7 +1241,7 @@ static void skin_fix_hole_no_good_verts(BMesh *bm, Frame *frame, BMFace *split_f
 		longest_edge = BM_face_find_longest_loop(split_face)->e;
 		
 		BM_mesh_elem_hflag_disable_all(bm, BM_EDGE, BM_ELEM_TAG, FALSE);
-		BM_elem_flag_enable(longest_edge, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, longest_edge, BM_ELEM_TAG);
 
 		BMO_op_callf(bm, BMO_FLAG_DEFAULTS,
 		             "subdivide_edges edges=%he numcuts=%i quadcornertype=%i",
@@ -1435,9 +1435,9 @@ static void hull_merge_triangles(SkinOutput *so, const SkinModifierData *smd)
 			    !BM_face_share_face_count(adj[0], adj[1]))
 			{
 				add_quad_from_tris(so, e, adj);
-				BM_elem_flag_enable(adj[0], BM_ELEM_TAG);
-				BM_elem_flag_enable(adj[1], BM_ELEM_TAG);
-				BM_elem_flag_enable(e, BM_ELEM_TAG);
+				BM_elem_flag_enable(so->bm, adj[0], BM_ELEM_TAG);
+				BM_elem_flag_enable(so->bm, adj[1], BM_ELEM_TAG);
+				BM_elem_flag_enable(so->bm, e, BM_ELEM_TAG);
 			}
 		}
 	}
@@ -1620,7 +1620,7 @@ static void skin_smooth_hulls(BMesh *bm, SkinNode *skin_nodes,
 			Frame *frame = &skin_nodes[i].frames[j];
 
 			for (k = 0; k < 4; k++)
-				BM_elem_flag_enable(frame->verts[k], BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, frame->verts[k], BM_ELEM_TAG);
 		}
 	}
 

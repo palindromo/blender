@@ -163,7 +163,7 @@ static void bm_extrude_copy_face_loop_attributes(BMesh *bm, BMFace *f, BMEdge *e
 	}
 
 	BM_elem_attrs_copy(bm, bm, l_src_1->f, l_dst_a->f);
-	BM_elem_flag_disable(f, BM_ELEM_HIDDEN); /* possibly we copy from a hidden face */
+	BM_elem_flag_disable(bm, f, BM_ELEM_HIDDEN); /* possibly we copy from a hidden face */
 
 	/* copy data */
 	BM_elem_attrs_copy(bm, bm, l_src_2, l_dst_a);
@@ -458,7 +458,7 @@ static void calc_solidify_normals(BMesh *bm)
 	int *edge_face_count = MEM_callocN(sizeof(int) * bm->totedge, __func__);
 
 	BM_ITER_MESH (v, &viter, bm, BM_VERTS_OF_MESH) {
-		BM_elem_flag_enable(v, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, v, BM_ELEM_TAG);
 	}
 
 	BM_mesh_elem_index_ensure(bm, BM_EDGE);
@@ -551,8 +551,8 @@ static void calc_solidify_normals(BMesh *bm)
 			else {
 				/* can't do anything useful here!
 				 * Set the face index for a vert in case it gets a zero normal */
-				BM_elem_flag_disable(e->v1, BM_ELEM_TAG);
-				BM_elem_flag_disable(e->v2, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, e->v1, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, e->v2, BM_ELEM_TAG);
 				continue;
 			}
 		}

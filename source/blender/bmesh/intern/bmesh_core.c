@@ -129,7 +129,7 @@ BMEdge *BM_edge_create(BMesh *bm, BMVert *v1, BMVert *v2, const BMEdge *example,
 	e->v1 = v1;
 	e->v2 = v2;
 	
-	BM_elem_flag_enable(e, BM_ELEM_SMOOTH);
+	BM_elem_flag_enable(bm, e, BM_ELEM_SMOOTH);
 	
 	CustomData_bmesh_set_default(&bm->edata, &e->head.data);
 	
@@ -1718,15 +1718,15 @@ BMFace *bmesh_jf(BMesh *bm, BMFace *f1, BMFace *f2, BMEdge *e)
 
 	/* validate no internal join */
 	for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f1); i < f1len; i++, l_iter = l_iter->next) {
-		BM_elem_flag_disable(l_iter->v, BM_ELEM_INTERNAL_TAG);
+		BM_elem_flag_disable(bm, l_iter->v, BM_ELEM_INTERNAL_TAG);
 	}
 	for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f2); i < f2len; i++, l_iter = l_iter->next) {
-		BM_elem_flag_disable(l_iter->v, BM_ELEM_INTERNAL_TAG);
+		BM_elem_flag_disable(bm, l_iter->v, BM_ELEM_INTERNAL_TAG);
 	}
 
 	for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f1); i < f1len; i++, l_iter = l_iter->next) {
 		if (l_iter != f1loop) {
-			BM_elem_flag_enable(l_iter->v, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_enable(bm, l_iter->v, BM_ELEM_INTERNAL_TAG);
 		}
 	}
 	for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f2); i < f2len; i++, l_iter = l_iter->next) {

@@ -113,7 +113,7 @@ void bmo_weld_verts_exec(BMesh *bm, BMOperator *op)
 			BMO_elem_flag_enable(bm, v, ELE_DEL);
 
 			/* merge the vertex flags, else we get randomly selected/unselected verts */
-			BM_elem_flag_merge(v, v2);
+			BM_elem_flag_merge(bm, v, v2);
 		}
 	}
 

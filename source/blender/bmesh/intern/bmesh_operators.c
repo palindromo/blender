@@ -902,7 +902,7 @@ void BMO_slot_buffer_hflag_enable(BMesh *bm, BMOperator *op, const char *slot_na
 			BM_elem_hide_set(bm, *data, FALSE);
 		}
 
-		BM_elem_flag_enable(*data, hflag);
+		BM_elem_flag_enable(bm, *data, hflag);
 	}
 }
 
@@ -935,7 +935,7 @@ void BMO_slot_buffer_hflag_disable(BMesh *bm, BMOperator *op, const char *slot_n
 			BM_elem_hide_set(bm, *data, FALSE);
 		}
 
-		BM_elem_flag_disable(*data, hflag);
+		BM_elem_flag_disable(bm, *data, hflag);
 	}
 }
 

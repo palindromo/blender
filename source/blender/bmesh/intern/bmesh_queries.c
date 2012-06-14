@@ -1094,7 +1094,7 @@ int BM_face_exists(BMesh *bm, BMVert **varr, int len, BMFace **r_existface)
  *
  * \a earr and \a varr can be in any order, however they _must_ form a closed loop.
  */
-int BM_face_exists_multi(BMVert **varr, BMEdge **earr, int len)
+int BM_face_exists_multi(BMesh *bm, BMVert **varr, BMEdge **earr, int len)
 {
 	BMFace *f;
 	BMEdge *e;
@@ -1111,23 +1111,23 @@ int BM_face_exists_multi(BMVert **varr, BMEdge **earr, int len)
 		/* save some time by looping over edge faces rather then vert faces
 		 * will still loop over some faces twice but not as many */
 		BM_ITER_ELEM (f, &fiter, earr[i], BM_FACES_OF_EDGE) {
-			BM_elem_flag_disable(f, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_disable(bm, f, BM_ELEM_INTERNAL_TAG);
 			BM_ITER_ELEM (v, &viter, f, BM_VERTS_OF_FACE) {
-				BM_elem_flag_disable(v, BM_ELEM_INTERNAL_TAG);
+				BM_elem_flag_disable(bm, v, BM_ELEM_INTERNAL_TAG);
 			}
 		}
 
 		/* clear all edge tags */
 		BM_ITER_ELEM (e, &fiter, varr[i], BM_EDGES_OF_VERT) {
-			BM_elem_flag_disable(e, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_disable(bm, e, BM_ELEM_INTERNAL_TAG);
 		}
 	}
 
 	/* now tag all verts and edges in the boundary array as true so
 	 * we can know if a face-vert is from our array */
 	for (i = 0; i < len; i++) {
-		BM_elem_flag_enable(varr[i], BM_ELEM_INTERNAL_TAG);
-		BM_elem_flag_enable(earr[i], BM_ELEM_INTERNAL_TAG);
+		BM_elem_flag_enable(bm, varr[i], BM_ELEM_INTERNAL_TAG);
+		BM_elem_flag_enable(bm, earr[i], BM_ELEM_INTERNAL_TAG);
 	}
 
 
@@ -1149,7 +1149,7 @@ int BM_face_exists_multi(BMVert **varr, BMEdge **earr, int len)
 
 				if (ok) {
 					/* we only use boundary verts */
-					BM_elem_flag_enable(f, BM_ELEM_INTERNAL_TAG);
+					BM_elem_flag_enable(bm, f, BM_ELEM_INTERNAL_TAG);
 					tot_tag++;
 				}
 			}
@@ -1200,7 +1200,7 @@ int BM_face_exists_multi(BMVert **varr, BMEdge **earr, int len)
 }
 
 /* same as 'BM_face_exists_multi' but built vert array from edges */
-int BM_face_exists_multi_edge(BMEdge **earr, int len)
+int BM_face_exists_multi_edge(BMesh *bm, BMEdge **earr, int len)
 {
 	BMVert **varr;
 	BLI_array_fixedstack_declare(varr, BM_NGON_STACK_SIZE, len, __func__);
@@ -1223,7 +1223,7 @@ int BM_face_exists_multi_edge(BMEdge **earr, int len)
 		return FALSE;
 	}
 
-	ok = BM_face_exists_multi(varr, earr, len);
+	ok = BM_face_exists_multi(bm, varr, earr, len);
 
 	BLI_array_fixedstack_free(varr);
 

@@ -130,9 +130,9 @@ int BM_mesh_validate(BMesh *bm)
 		l_iter = l_first = BM_FACE_FIRST_LOOP(f);
 
 		do {
-			BM_elem_flag_disable(l_iter,    BM_ELEM_INTERNAL_TAG);
-			BM_elem_flag_disable(l_iter->v, BM_ELEM_INTERNAL_TAG);
-			BM_elem_flag_disable(l_iter->e, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_disable(bm, l_iter,    BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_disable(bm, l_iter->v, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_disable(bm, l_iter->e, BM_ELEM_INTERNAL_TAG);
 		} while ((l_iter = l_iter->next) != l_first);
 
 		j = 0;
@@ -166,9 +166,9 @@ int BM_mesh_validate(BMesh *bm)
 				ERRMSG("face %d: has invalid 'radial_next/radial_prev' at corner: %d", i, j);
 			}
 
-			BM_elem_flag_enable(l_iter,    BM_ELEM_INTERNAL_TAG);
-			BM_elem_flag_enable(l_iter->v, BM_ELEM_INTERNAL_TAG);
-			BM_elem_flag_enable(l_iter->e, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_enable(bm, l_iter,    BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_enable(bm, l_iter->v, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_enable(bm, l_iter->e, BM_ELEM_INTERNAL_TAG);
 			j++;
 		} while ((l_iter = l_iter->next) != l_first);
 

@@ -177,7 +177,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 	BM_mesh_elem_index_ensure(bm, BM_VERT);
 
 	BM_ITER_MESH_INDEX (v_src, &iter, bm, BM_VERTS_OF_MESH, i) {
-		BM_elem_flag_disable(v_src, BM_ELEM_TAG);
+		BM_elem_flag_disable(bm, v_src, BM_ELEM_TAG);
 		verts_src[i] = v_src;
 	}
 
@@ -186,12 +186,12 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 
 	BMO_ITER (f_src, &oiter, bm, op, "faces", BM_FACE) {
 		verts_loop_tot += f_src->len;
-		BM_elem_flag_enable(f_src, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, f_src, BM_ELEM_TAG);
 		BM_ITER_ELEM (l, &itersub, f_src, BM_LOOPS_OF_FACE) {
-			BM_elem_flag_enable(l->v, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, l->v, BM_ELEM_TAG);
 
 			/* also tag boundary edges */
-			BM_elem_flag_set(l->e, BM_ELEM_TAG, bm_loop_is_radial_boundary(l));
+			BM_elem_flag_set(bm, l->e, BM_ELEM_TAG, bm_loop_is_radial_boundary(l));
 		}
 	}
 
@@ -219,7 +219,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 
 		/* conflicts with BM_vert_calc_mean_tagged_edge_length */
 		if (use_relative_offset == FALSE) {
-			BM_elem_flag_disable(v_src, BM_ELEM_TAG);
+			BM_elem_flag_disable(bm, v_src, BM_ELEM_TAG);
 		}
 	}
 
@@ -254,14 +254,14 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 
 					BMLoop *l_pair[2] = {l, l->next};
 
-					BM_elem_flag_enable(l->e, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, l->e, BM_ELEM_TAG);
 					for (i = 0; i < 2; i++) {
 						if (!BM_elem_flag_test(l_pair[i]->v, BM_ELEM_TAG)) {
 							float no_face[3];
 							BMVert *va_other;
 							BMVert *vb_other;
 
-							BM_elem_flag_enable(l_pair[i]->v, BM_ELEM_TAG);
+							BM_elem_flag_enable(bm, l_pair[i]->v, BM_ELEM_TAG);
 
 							bm_vert_boundary_tangent(l_pair[i]->v, tvec, no_face, &va_other, &vb_other);
 
@@ -289,7 +289,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 	}
 
 	BMO_ITER (f_src, &oiter, bm, op, "faces", BM_FACE) {
-		BM_elem_flag_disable(f_src, BM_ELEM_TAG);
+		BM_elem_flag_disable(bm, f_src, BM_ELEM_TAG);
 		BM_ITER_ELEM (l, &itersub, f_src, BM_LOOPS_OF_FACE) {
 			BMFace *f_new;
 			BMLoop *l_new;
@@ -310,7 +310,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 			BMVert *v_pos2 = verts_pos[i_2];
 
 			f_new = BM_face_create_quad_tri(bm, v_l1, v_l2, v_neg2, v_neg1, f_src, FALSE);
-			BM_elem_flag_enable(f_new, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, f_new, BM_ELEM_TAG);
 			l_new = BM_FACE_FIRST_LOOP(f_new);
 
 			BM_elem_attrs_copy(bm, bm, l,      l_new);
@@ -319,7 +319,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 			BM_elem_attrs_copy(bm, bm, l_next, l_new->next->next);
 
 			f_new = BM_face_create_quad_tri(bm, v_l2, v_l1, v_pos1, v_pos2, f_src, FALSE);
-			BM_elem_flag_enable(f_new, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, f_new, BM_ELEM_TAG);
 			l_new = BM_FACE_FIRST_LOOP(f_new);
 
 			BM_elem_attrs_copy(bm, bm, l_next, l_new);
@@ -335,7 +335,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 					BMVert *v_b2 = verts_boundary[i_2];
 
 					f_new = BM_face_create_quad_tri(bm, v_b2, v_b1, v_neg1, v_neg2, f_src, FALSE);
-					BM_elem_flag_enable(f_new, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, f_new, BM_ELEM_TAG);
 					l_new = BM_FACE_FIRST_LOOP(f_new);
 
 					BM_elem_attrs_copy(bm, bm, l_next, l_new);
@@ -344,7 +344,7 @@ void bmo_wireframe_exec(BMesh *bm, BMOperator *op)
 					BM_elem_attrs_copy(bm, bm, l,      l_new->next->next);
 
 					f_new = BM_face_create_quad_tri(bm, v_b1, v_b2, v_pos2, v_pos1, f_src, FALSE);
-					BM_elem_flag_enable(f_new, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, f_new, BM_ELEM_TAG);
 					l_new = BM_FACE_FIRST_LOOP(f_new);
 
 					BM_elem_attrs_copy(bm, bm, l,      l_new);

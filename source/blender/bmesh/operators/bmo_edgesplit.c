@@ -64,7 +64,7 @@ static void bm_edgesplit_validate_seams(BMesh *bm, BMOperator *op)
 
 		/* unrelated to flag assignment in this function - since this is the
 		 * only place we loop over all edges, disable tag */
-		BM_elem_flag_disable(e, BM_ELEM_INTERNAL_TAG);
+		BM_elem_flag_disable(bm, e, BM_ELEM_INTERNAL_TAG);
 
 		if (e->l == NULL) {
 			BMO_elem_flag_disable(bm, e, EDGE_SEAM);
@@ -133,25 +133,25 @@ void bmo_split_edges_exec(BMesh *bm, BMOperator *op)
 	BMO_ITER (e, &siter, bm, op, "edges", BM_EDGE) {
 		if (BMO_elem_flag_test(bm, e, EDGE_SEAM)) {
 			/* this flag gets copied so we can be sure duplicate edges get it too (important) */
-			BM_elem_flag_enable(e, BM_ELEM_INTERNAL_TAG);
+			BM_elem_flag_enable(bm, e, BM_ELEM_INTERNAL_TAG);
 
 			/* keep splitting until each loop has its own edge */
 			do {
 				bmesh_edge_separate(bm, e, e->l);
 			} while (!BM_edge_is_boundary(e));
 
-			BM_elem_flag_enable(e->v1, BM_ELEM_TAG);
-			BM_elem_flag_enable(e->v2, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, e->v1, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, e->v2, BM_ELEM_TAG);
 		}
 	}
 
 	if (use_verts) {
 		BMO_ITER (e, &siter, bm, op, "edges", BM_EDGE) {
 			if (BMO_elem_flag_test(bm, e->v1, VERT_SEAM) == FALSE) {
-				BM_elem_flag_disable(e->v1, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, e->v1, BM_ELEM_TAG);
 			}
 			if (BMO_elem_flag_test(bm, e->v2, VERT_SEAM) == FALSE) {
-				BM_elem_flag_disable(e->v2, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, e->v2, BM_ELEM_TAG);
 			}
 		}
 	}
@@ -159,11 +159,11 @@ void bmo_split_edges_exec(BMesh *bm, BMOperator *op)
 	BMO_ITER (e, &siter, bm, op, "edges", BM_EDGE) {
 		if (BMO_elem_flag_test(bm, e, EDGE_SEAM)) {
 			if (BM_elem_flag_test(e->v1, BM_ELEM_TAG)) {
-				BM_elem_flag_disable(e->v1, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, e->v1, BM_ELEM_TAG);
 				bmesh_vert_separate(bm, e->v1, NULL, NULL);
 			}
 			if (BM_elem_flag_test(e->v2, BM_ELEM_TAG)) {
-				BM_elem_flag_disable(e->v2, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, e->v2, BM_ELEM_TAG);
 				bmesh_vert_separate(bm, e->v2, NULL, NULL);
 			}
 		}

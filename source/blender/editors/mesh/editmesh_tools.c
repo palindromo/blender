@@ -356,8 +356,8 @@ static short edbm_extrude_vert(Object *obedit, BMEditMesh *em, const char hflag,
 				BM_vert_select_set(em->bm, eed->v2, TRUE);
 			}
 
-			BM_elem_flag_enable(eed->v1, hflag & ~BM_ELEM_SELECT);
-			BM_elem_flag_enable(eed->v2, hflag & ~BM_ELEM_SELECT);
+			BM_elem_flag_enable(em->bm, eed->v1, hflag & ~BM_ELEM_SELECT);
+			BM_elem_flag_enable(em->bm, eed->v2, hflag & ~BM_ELEM_SELECT);
 		}
 		else {
 			if (BM_elem_flag_test(eed->v1, hflag) && BM_elem_flag_test(eed->v2, hflag)) {
@@ -365,7 +365,7 @@ static short edbm_extrude_vert(Object *obedit, BMEditMesh *em, const char hflag,
 					BM_edge_select_set(em->bm, eed, TRUE);
 				}
 
-				BM_elem_flag_enable(eed, hflag & ~BM_ELEM_SELECT);
+				BM_elem_flag_enable(em->bm, eed, hflag & ~BM_ELEM_SELECT);
 			}
 		}
 	}
@@ -1103,14 +1103,14 @@ static int edbm_mark_seam(bContext *C, wmOperator *op)
 			if (!BM_elem_flag_test(eed, BM_ELEM_SELECT) || BM_elem_flag_test(eed, BM_ELEM_HIDDEN))
 				continue;
 			
-			BM_elem_flag_disable(eed, BM_ELEM_SEAM);
+			BM_elem_flag_disable(bm, eed, BM_ELEM_SEAM);
 		}
 	}
 	else {
 		BM_ITER_MESH (eed, &iter, bm, BM_EDGES_OF_MESH) {
 			if (!BM_elem_flag_test(eed, BM_ELEM_SELECT) || BM_elem_flag_test(eed, BM_ELEM_HIDDEN))
 				continue;
-			BM_elem_flag_enable(eed, BM_ELEM_SEAM);
+			BM_elem_flag_enable(bm, eed, BM_ELEM_SEAM);
 		}
 	}
 
@@ -1157,7 +1157,7 @@ static int edbm_mark_sharp(bContext *C, wmOperator *op)
 			if (!BM_elem_flag_test(eed, BM_ELEM_SELECT) || BM_elem_flag_test(eed, BM_ELEM_HIDDEN))
 				continue;
 			
-			BM_elem_flag_disable(eed, BM_ELEM_SMOOTH);
+			BM_elem_flag_disable(bm, eed, BM_ELEM_SMOOTH);
 		}
 	}
 	else {
@@ -1165,7 +1165,7 @@ static int edbm_mark_sharp(bContext *C, wmOperator *op)
 			if (!BM_elem_flag_test(eed, BM_ELEM_SELECT) || BM_elem_flag_test(eed, BM_ELEM_HIDDEN))
 				continue;
 			
-			BM_elem_flag_enable(eed, BM_ELEM_SMOOTH);
+			BM_elem_flag_enable(bm, eed, BM_ELEM_SMOOTH);
 		}
 	}
 
@@ -1368,14 +1368,14 @@ static int edbm_edge_rotate_selected_exec(bContext *C, wmOperator *op)
 
 	/* first see if we have two adjacent faces */
 	BM_ITER_MESH (eed, &iter, em->bm, BM_EDGES_OF_MESH) {
-		BM_elem_flag_disable(eed, BM_ELEM_TAG);
+		BM_elem_flag_disable(em->bm, eed, BM_ELEM_TAG);
 		if (BM_elem_flag_test(eed, BM_ELEM_SELECT)) {
 			BMFace *fa, *fb;
 			if (BM_edge_face_pair(eed, &fa, &fb)) {
 				/* if both faces are selected we rotate between them,
 				 * otherwise - rotate between 2 unselected - but not mixed */
 				if (BM_elem_flag_test(fa, BM_ELEM_SELECT) == BM_elem_flag_test(fb, BM_ELEM_SELECT)) {
-					BM_elem_flag_enable(eed, BM_ELEM_TAG);
+					BM_elem_flag_enable(em->bm, eed, BM_ELEM_TAG);
 					tot++;
 				}
 			}
@@ -1617,7 +1617,7 @@ static void mesh_set_smooth_faces(BMEditMesh *em, short smooth)
 	
 	BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
 		if (BM_elem_flag_test(efa, BM_ELEM_SELECT)) {
-			BM_elem_flag_set(efa, BM_ELEM_SMOOTH, smooth);
+			BM_elem_flag_set(em->bm, efa, BM_ELEM_SMOOTH, smooth);
 		}
 	}
 }
@@ -2931,10 +2931,10 @@ static void bm_mesh_hflag_flush_vert(BMesh *bm, const char hflag)
 		if (BM_elem_flag_test(e->v1, hflag) &&
 		    BM_elem_flag_test(e->v2, hflag))
 		{
-			BM_elem_flag_enable(e, hflag);
+			BM_elem_flag_enable(bm, e, hflag);
 		}
 		else {
-			BM_elem_flag_disable(e, hflag);
+			BM_elem_flag_disable(bm, e, hflag);
 		}
 	}
 	BM_ITER_MESH (f, &fiter, bm, BM_FACES_OF_MESH) {
@@ -2947,7 +2947,7 @@ static void bm_mesh_hflag_flush_vert(BMesh *bm, const char hflag)
 			}
 		} while ((l_iter = l_iter->next) != l_first);
 
-		BM_elem_flag_set(f, hflag, ok);
+		BM_elem_flag_set(bm, f, hflag, ok);
 	}
 }
 
@@ -2968,11 +2968,11 @@ static int mesh_separate_material(Main *bmain, Scene *scene, Base *base_old, BMe
 				BMLoop *l_iter;
 				BMLoop *l_first;
 
-				BM_elem_flag_enable(f, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm_old, f, BM_ELEM_TAG);
 				l_iter = l_first = BM_FACE_FIRST_LOOP(f);
 				do {
-					BM_elem_flag_enable(l_iter->v, BM_ELEM_TAG);
-					BM_elem_flag_enable(l_iter->e, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm_old, l_iter->v, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm_old, l_iter->e, BM_ELEM_TAG);
 				} while ((l_iter = l_iter->next) != l_first);
 
 				tot++;
@@ -3019,7 +3019,7 @@ static int mesh_separate_loose(Main *bmain, Scene *scene, Base *base_old, BMesh 
 		}
 
 		/* Select the seed explicitly, in case it has no edges */
-		if (!BM_elem_flag_test(v_seed, BM_ELEM_TAG)) { BM_elem_flag_enable(v_seed, BM_ELEM_TAG); tot++; }
+		if (!BM_elem_flag_test(v_seed, BM_ELEM_TAG)) { BM_elem_flag_enable(bm_old, v_seed, BM_ELEM_TAG); tot++; }
 
 		/* Walk from the single vertex, selecting everything connected
 		 * to it */
@@ -3030,8 +3030,8 @@ static int mesh_separate_loose(Main *bmain, Scene *scene, Base *base_old, BMesh 
 
 		e = BMW_begin(&walker, v_seed);
 		for (; e; e = BMW_step(&walker)) {
-			if (!BM_elem_flag_test(e->v1, BM_ELEM_TAG)) { BM_elem_flag_enable(e->v1, BM_ELEM_TAG); tot++; }
-			if (!BM_elem_flag_test(e->v2, BM_ELEM_TAG)) { BM_elem_flag_enable(e->v2, BM_ELEM_TAG); tot++; }
+			if (!BM_elem_flag_test(e->v1, BM_ELEM_TAG)) { BM_elem_flag_enable(bm_old, e->v1, BM_ELEM_TAG); tot++; }
+			if (!BM_elem_flag_test(e->v2, BM_ELEM_TAG)) { BM_elem_flag_enable(bm_old, e->v2, BM_ELEM_TAG); tot++; }
 		}
 		BMW_end(&walker);
 
@@ -3368,17 +3368,17 @@ static int edbm_dissolve_limited_exec(bContext *C, wmOperator *op)
 		BMLoop *l;
 
 		BM_ITER_MESH (ele, &iter, bm, BM_VERTS_OF_MESH) {
-			BM_elem_flag_set(ele, BM_ELEM_TAG, BM_elem_flag_test(ele, BM_ELEM_SELECT));
+			BM_elem_flag_set(bm, ele, BM_ELEM_TAG, BM_elem_flag_test(ele, BM_ELEM_SELECT));
 		}
 		BM_ITER_MESH (ele, &iter, bm, BM_EDGES_OF_MESH) {
-			BM_elem_flag_set(ele, BM_ELEM_TAG, BM_elem_flag_test(ele, BM_ELEM_SELECT));
+			BM_elem_flag_set(bm, ele, BM_ELEM_TAG, BM_elem_flag_test(ele, BM_ELEM_SELECT));
 		}
 
 		BM_ITER_MESH (f, &iter, bm, BM_FACES_OF_MESH) {
 			if (!BM_elem_flag_test(f, BM_ELEM_SELECT)) {
 				BM_ITER_ELEM (l, &liter, f, BM_LOOPS_OF_FACE) {
-					BM_elem_flag_disable(l->v, BM_ELEM_TAG);
-					BM_elem_flag_disable(l->e, BM_ELEM_TAG);
+					BM_elem_flag_disable(bm, l->v, BM_ELEM_TAG);
+					BM_elem_flag_disable(bm, l->e, BM_ELEM_TAG);
 				}
 			}
 		}

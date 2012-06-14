@@ -536,7 +536,7 @@ void bmo_dissolve_limit_exec(BMesh *bm, BMOperator *op)
 
 	/* wire -> tag */
 	BM_ITER_MESH (e_iter, &iter, bm, BM_EDGES_OF_MESH) {
-		BM_elem_flag_set(e_iter, BM_ELEM_TAG, BM_edge_is_wire(e_iter));
+		BM_elem_flag_set(bm, e_iter, BM_ELEM_TAG, BM_edge_is_wire(e_iter));
 	}
 
 	/* go through and split edge */

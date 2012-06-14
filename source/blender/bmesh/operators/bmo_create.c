@@ -1044,14 +1044,14 @@ void bmo_edgenet_fill_exec(BMesh *bm, BMOperator *op)
 
 			if ((use_fill_check == FALSE) ||
 			    /* fairly expensive check - see if there are already faces filling this area */
-			    (BM_face_exists_multi_edge(edges, i) == FALSE))
+			    (BM_face_exists_multi_edge(bm, edges, i) == FALSE))
 			{
 				f = BM_face_create_ngon(bm, v1, v2, edges, i, TRUE);
 				if (f && !BMO_elem_flag_test(bm, f, ELE_ORIG)) {
 					BMO_elem_flag_enable(bm, f, FACE_NEW);
 					f->mat_nr = mat_nr;
 					if (use_smooth) {
-						BM_elem_flag_enable(f, BM_ELEM_SMOOTH);
+						BM_elem_flag_enable(bm, f, BM_ELEM_SMOOTH);
 					}
 				}
 
@@ -1482,7 +1482,7 @@ void bmo_contextual_create_exec(BMesh *bm, BMOperator *op)
 			BMO_elem_flag_enable(bm, f, ELE_OUT);
 			f->mat_nr = mat_nr;
 			if (use_smooth) {
-				BM_elem_flag_enable(f, BM_ELEM_SMOOTH);
+				BM_elem_flag_enable(bm, f, BM_ELEM_SMOOTH);
 			}
 		}
 

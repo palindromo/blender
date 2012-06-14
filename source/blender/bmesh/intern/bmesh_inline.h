@@ -32,11 +32,12 @@
 /* stuff for dealing with header flags */
 #define BM_elem_flag_test(     ele, hflag)      _bm_elem_flag_test     (&(ele)->head, hflag)
 #define BM_elem_flag_test_bool(ele, hflag)      _bm_elem_flag_test_bool(&(ele)->head, hflag)
-#define BM_elem_flag_enable(   ele, hflag)      _bm_elem_flag_enable   (&(ele)->head, hflag)
-#define BM_elem_flag_disable(  ele, hflag)      _bm_elem_flag_disable  (&(ele)->head, hflag)
-#define BM_elem_flag_set(      ele, hflag, val) _bm_elem_flag_set      (&(ele)->head, hflag, val)
-#define BM_elem_flag_toggle(   ele, hflag)      _bm_elem_flag_toggle   (&(ele)->head, hflag)
-#define BM_elem_flag_merge(    ele_a, ele_b)    _bm_elem_flag_merge    (&(ele_a)->head, &(ele_b)->head)
+
+#define BM_elem_flag_enable(   bm, ele, hflag)      _bm_elem_flag_enable   (bm, &(ele)->head, hflag)
+#define BM_elem_flag_disable(  bm, ele, hflag)      _bm_elem_flag_disable  (bm, &(ele)->head, hflag)
+#define BM_elem_flag_set(      bm, ele, hflag, val) _bm_elem_flag_set      (bm, &(ele)->head, hflag, val)
+#define BM_elem_flag_toggle(   bm, ele, hflag)      _bm_elem_flag_toggle   (bm, &(ele)->head, hflag)
+#define BM_elem_flag_merge(    bm, ele_a, ele_b)    _bm_elem_flag_merge    (bm, &(ele_a)->head, &(ele_b)->head)
 
 BLI_INLINE char _bm_elem_flag_test(const BMHeader *head, const char hflag)
 {
@@ -48,28 +49,28 @@ BLI_INLINE short _bm_elem_flag_test_bool(const BMHeader *head, const char hflag)
 	return (head->hflag & hflag) != 0;
 }
 
-BLI_INLINE void _bm_elem_flag_enable(BMHeader *head, const char hflag)
+BLI_INLINE void _bm_elem_flag_enable(BMesh *UNUSED(bm), BMHeader *head, const char hflag)
 {
 	head->hflag |= hflag;
 }
 
-BLI_INLINE void _bm_elem_flag_disable(BMHeader *head, const char hflag)
+BLI_INLINE void _bm_elem_flag_disable(BMesh *UNUSED(bm), BMHeader *head, const char hflag)
 {
 	head->hflag &= ~hflag;
 }
 
-BLI_INLINE void _bm_elem_flag_set(BMHeader *head, const char hflag, const int val)
+BLI_INLINE void _bm_elem_flag_set(BMesh *bm, BMHeader *head, const char hflag, const int val)
 {
-	if (val)  _bm_elem_flag_enable(head,  hflag);
-	else      _bm_elem_flag_disable(head, hflag);
+	if (val)  _bm_elem_flag_enable(bm, head,  hflag);
+	else      _bm_elem_flag_disable(bm, head, hflag);
 }
 
-BLI_INLINE void _bm_elem_flag_toggle(BMHeader *head, const char hflag)
+BLI_INLINE void _bm_elem_flag_toggle(BMesh *UNUSED(bm), BMHeader *head, const char hflag)
 {
 	head->hflag ^= hflag;
 }
 
-BLI_INLINE void _bm_elem_flag_merge(BMHeader *head_a, BMHeader *head_b)
+BLI_INLINE void _bm_elem_flag_merge(BMesh *UNUSED(bm), BMHeader *head_a, BMHeader *head_b)
 {
 	head_a->hflag = head_b->hflag = head_a->hflag | head_b->hflag;
 }

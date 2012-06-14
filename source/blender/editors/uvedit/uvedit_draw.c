@@ -205,12 +205,12 @@ static void draw_uvs_stretch(SpaceImage *sima, Scene *scene, BMEditMesh *em, MTe
 				totuvarea += uv_poly_area(tf_uv, efa->len);
 				
 				if (uvedit_face_visible_test(scene, ima, efa, tf)) {
-					BM_elem_flag_enable(efa, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, efa, BM_ELEM_TAG);
 				}
 				else {
 					if (tf == activetf)
 						activetf = NULL;
-					BM_elem_flag_disable(efa, BM_ELEM_TAG);
+					BM_elem_flag_disable(bm, efa, BM_ELEM_TAG);
 				}
 			}
 			
@@ -296,7 +296,7 @@ static void draw_uvs_stretch(SpaceImage *sima, Scene *scene, BMEditMesh *em, MTe
 				
 				if (uvedit_face_visible_test(scene, ima, efa, tf)) {
 					nverts = efa->len;
-					BM_elem_flag_enable(efa, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, efa, BM_ELEM_TAG);
 					BLI_array_empty(tf_uv);
 					BLI_array_empty(tf_uvorig);
 					BLI_array_empty(uvang);
@@ -348,7 +348,7 @@ static void draw_uvs_stretch(SpaceImage *sima, Scene *scene, BMEditMesh *em, MTe
 				else {
 					if (tf == activetf)
 						activetf = NULL;
-					BM_elem_flag_disable(efa, BM_ELEM_TAG);
+					BM_elem_flag_disable(bm, efa, BM_ELEM_TAG);
 				}
 			}
 
@@ -507,7 +507,7 @@ static void draw_uvs(SpaceImage *sima, Scene *scene, Object *obedit)
 			tf = CustomData_bmesh_get(&bm->pdata, efa->head.data, CD_MTEXPOLY);
 			
 			if (uvedit_face_visible_test(scene, ima, efa, tf)) {
-				BM_elem_flag_enable(efa, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, efa, BM_ELEM_TAG);
 				if (tf == activetf) continue;  /* important the temp boolean is set above */
 
 				if (uvedit_face_select_test(scene, em, efa))
@@ -525,7 +525,7 @@ static void draw_uvs(SpaceImage *sima, Scene *scene, Object *obedit)
 			else {
 				if (tf == activetf)
 					activetf = NULL;
-				BM_elem_flag_disable(efa, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, efa, BM_ELEM_TAG);
 			}
 		}
 		glDisable(GL_BLEND);
@@ -537,12 +537,12 @@ static void draw_uvs(SpaceImage *sima, Scene *scene, Object *obedit)
 			tf = CustomData_bmesh_get(&bm->pdata, efa->head.data, CD_MTEXPOLY);
 
 			if (uvedit_face_visible_test(scene, ima, efa, tf)) {		
-				BM_elem_flag_enable(efa, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, efa, BM_ELEM_TAG);
 			}
 			else {
 				if (tf == activetf)
 					activetf = NULL;
-				BM_elem_flag_disable(efa, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, efa, BM_ELEM_TAG);
 			}
 		}
 		

@@ -131,17 +131,17 @@ void bmo_inset_exec(BMesh *bm, BMOperator *op)
 		    (bm_edge_is_mixed_face_tag(e->l)))
 		{
 			/* tag */
-			BM_elem_flag_enable(e->v1, BM_ELEM_TAG);
-			BM_elem_flag_enable(e->v2, BM_ELEM_TAG);
-			BM_elem_flag_enable(e, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, e->v1, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, e->v2, BM_ELEM_TAG);
+			BM_elem_flag_enable(bm, e, BM_ELEM_TAG);
 
 			BM_elem_index_set(e, edge_info_len); /* set_dirty! */
 			edge_info_len++;
 		}
 		else {
-			BM_elem_flag_disable(e->v1, BM_ELEM_TAG);
-			BM_elem_flag_disable(e->v2, BM_ELEM_TAG);
-			BM_elem_flag_disable(e, BM_ELEM_TAG);
+			BM_elem_flag_disable(bm, e->v1, BM_ELEM_TAG);
+			BM_elem_flag_disable(bm, e->v2, BM_ELEM_TAG);
+			BM_elem_flag_disable(bm, e, BM_ELEM_TAG);
 
 			BM_elem_index_set(e, -1); /* set_dirty! */
 		}
@@ -186,11 +186,11 @@ void bmo_inset_exec(BMesh *bm, BMOperator *op)
 
 		/* store index back to original in 'edge_info' */
 		BM_elem_index_set(es->e_new, i);
-		BM_elem_flag_enable(es->e_new, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, es->e_new, BM_ELEM_TAG);
 
 		/* important to tag again here */
-		BM_elem_flag_enable(es->e_new->v1, BM_ELEM_TAG);
-		BM_elem_flag_enable(es->e_new->v2, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, es->e_new->v1, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, es->e_new->v2, BM_ELEM_TAG);
 	}
 
 
@@ -227,7 +227,7 @@ void bmo_inset_exec(BMesh *bm, BMOperator *op)
 				BMVert *v_glue = NULL;
 
 				/* disable touching twice, this _will_ happen if the flags not disabled */
-				BM_elem_flag_disable(v, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, v, BM_ELEM_TAG);
 
 				bmesh_vert_separate(bm, v, &vout, &r_vout_len);
 				v = NULL; /* don't use again */
@@ -516,7 +516,7 @@ void bmo_inset_exec(BMesh *bm, BMOperator *op)
 		/* tag face verts */
 		BMO_ITER (f, &oiter, bm, op, "faces", BM_FACE) {
 			BM_ITER_ELEM (v, &iter, f, BM_VERTS_OF_FACE) {
-				BM_elem_flag_enable(v, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, v, BM_ELEM_TAG);
 			}
 		}
 

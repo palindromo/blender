@@ -121,11 +121,11 @@ static int bpy_bm_elem_hflag_set(BPy_BMElem *self, PyObject *value, void *flag)
 	param = PyLong_AsLong(value);
 
 	if (param == TRUE) {
-		BM_elem_flag_enable(self->ele, hflag);
+		BM_elem_flag_enable(NULL /* TODO */, self->ele, hflag);
 		return 0;
 	}
 	else if (param == FALSE) {
-		BM_elem_flag_disable(self->ele, hflag);
+		BM_elem_flag_disable(NULL /* TODO */, self->ele, hflag);
 		return 0;
 	}
 	else {
@@ -3412,7 +3412,7 @@ void *BPy_BMElem_PySeq_As_Array(BMesh **r_bm, PyObject *seq, Py_ssize_t min, Py_
 			alloc[i] = item->ele;
 
 			if (do_unique_check) {
-				BM_elem_flag_enable(item->ele, BM_ELEM_INTERNAL_TAG);
+				BM_elem_flag_enable(bm, item->ele, BM_ELEM_INTERNAL_TAG);
 			}
 		}
 
@@ -3425,7 +3425,7 @@ void *BPy_BMElem_PySeq_As_Array(BMesh **r_bm, PyObject *seq, Py_ssize_t min, Py_
 				}
 
 				/* ensure we don't leave this enabled */
-				BM_elem_flag_disable(alloc[i], BM_ELEM_INTERNAL_TAG);
+				BM_elem_flag_disable(bm, alloc[i], BM_ELEM_INTERNAL_TAG);
 			}
 
 			if (ok == FALSE) {

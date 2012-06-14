@@ -1973,27 +1973,27 @@ static void createTransEditVerts(bContext *C, TransInfo *t)
 	// transform now requires awareness for select mode, so we tag the f1 flags in verts
 	if (selectmode & SCE_SELECT_VERTEX) {
 		BM_ITER_MESH (eve, &iter, bm, BM_VERTS_OF_MESH) {
-			BM_elem_flag_set(eve, BM_ELEM_TAG, BM_elem_flag_test(eve, BM_ELEM_SELECT));
+			BM_elem_flag_set(bm, eve, BM_ELEM_TAG, BM_elem_flag_test(eve, BM_ELEM_SELECT));
 		}
 	}
 	else if (selectmode & SCE_SELECT_EDGE) {
 		BMEdge *eed;
 
 		eve = BM_iter_new(&iter, bm, BM_VERTS_OF_MESH, NULL);
-		for (; eve; eve = BM_iter_step(&iter)) BM_elem_flag_disable(eve, BM_ELEM_TAG);
+		for (; eve; eve = BM_iter_step(&iter)) BM_elem_flag_disable(bm, eve, BM_ELEM_TAG);
 
 		eed = BM_iter_new(&iter, bm, BM_EDGES_OF_MESH, NULL);
 		for (; eed; eed = BM_iter_step(&iter)) {
 			if (BM_elem_flag_test(eed, BM_ELEM_SELECT)) {
-				BM_elem_flag_enable(eed->v1, BM_ELEM_TAG);
-				BM_elem_flag_enable(eed->v2, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, eed->v1, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, eed->v2, BM_ELEM_TAG);
 			}
 		}
 	}
 	else {
 		BMFace *efa;
 		eve = BM_iter_new(&iter, bm, BM_VERTS_OF_MESH, NULL);
-		for (; eve; eve = BM_iter_step(&iter)) BM_elem_flag_disable(eve, BM_ELEM_TAG);
+		for (; eve; eve = BM_iter_step(&iter)) BM_elem_flag_disable(bm, eve, BM_ELEM_TAG);
 
 		efa = BM_iter_new(&iter, bm, BM_FACES_OF_MESH, NULL);
 		for (; efa; efa = BM_iter_step(&iter)) {
@@ -2003,7 +2003,7 @@ static void createTransEditVerts(bContext *C, TransInfo *t)
 
 				l = BM_iter_new(&liter, bm, BM_LOOPS_OF_FACE, efa);
 				for (; l; l = BM_iter_step(&liter)) {
-					BM_elem_flag_enable(l->v, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, l->v, BM_ELEM_TAG);
 				}
 			}
 		}
@@ -2379,11 +2379,11 @@ static void createTransUVs(bContext *C, TransInfo *t)
 		tf = CustomData_bmesh_get(&em->bm->pdata, efa->head.data, CD_MTEXPOLY);
 
 		if (!uvedit_face_visible_test(scene, ima, efa, tf)) {
-			BM_elem_flag_disable(efa, BM_ELEM_TAG);
+			BM_elem_flag_disable(em->bm, efa, BM_ELEM_TAG);
 			continue;
 		}
 		
-		BM_elem_flag_enable(efa, BM_ELEM_TAG);
+		BM_elem_flag_enable(em->bm, efa, BM_ELEM_TAG);
 		BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
 			if (uvedit_uv_select_test(em, scene, l)) 
 				countsel++;

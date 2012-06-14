@@ -840,7 +840,7 @@ static int stitch_process_data(StitchState *state, Scene *scene, int final)
 			for (i = 0; i < state->total_boundary_edges; i++) {
 				UvEdge *edge = state->edges + i;
 				if ((state->uvs[edge->uv1]->flag & STITCH_STITCHABLE) && (state->uvs[edge->uv2]->flag & STITCH_STITCHABLE))
-					BM_elem_flag_disable(edge->element->l->e, BM_ELEM_SEAM);
+					BM_elem_flag_disable(state->em->bm, edge->element->l->e, BM_ELEM_SEAM);
 			}
 		}
 

@@ -1244,7 +1244,7 @@ void EDBM_mesh_reveal(BMEditMesh *em)
 	 * BM_ELEM_HIDDEN --> BM_ELEM_TAG */
 	for (i = 0; i < 3; i++) {
 		BM_ITER_MESH (ele, &iter, em->bm, iter_types[i]) {
-			BM_elem_flag_set(ele, BM_ELEM_TAG, BM_elem_flag_test(ele, BM_ELEM_HIDDEN));
+			BM_elem_flag_set(em->bm, ele, BM_ELEM_TAG, BM_elem_flag_test(ele, BM_ELEM_HIDDEN));
 		}
 	}
 

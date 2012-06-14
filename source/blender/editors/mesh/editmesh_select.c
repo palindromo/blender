@@ -77,10 +77,10 @@ void EDBM_select_mirrored(Object *UNUSED(obedit), BMEditMesh *em, int extend)
 
 	BM_ITER_MESH (v1, &iter, em->bm, BM_VERTS_OF_MESH) {
 		if (!BM_elem_flag_test(v1, BM_ELEM_SELECT) || BM_elem_flag_test(v1, BM_ELEM_HIDDEN)) {
-			BM_elem_flag_disable(v1, BM_ELEM_TAG);
+			BM_elem_flag_disable(em->bm, v1, BM_ELEM_TAG);
 		}
 		else {
-			BM_elem_flag_enable(v1, BM_ELEM_TAG);
+			BM_elem_flag_enable(em->bm, v1, BM_ELEM_TAG);
 		}
 	}
 
@@ -1211,10 +1211,10 @@ static void edgetag_context_set(BMEditMesh *em, Scene *scene, BMEdge *e, int val
 			BM_edge_select_set(em->bm, e, val);
 			break;
 		case EDGE_MODE_TAG_SEAM:
-			BM_elem_flag_set(e, BM_ELEM_SEAM, val);
+			BM_elem_flag_set(em->bm, e, BM_ELEM_SEAM, val);
 			break;
 		case EDGE_MODE_TAG_SHARP:
-			BM_elem_flag_set(e, BM_ELEM_SMOOTH, !val);
+			BM_elem_flag_set(em->bm, e, BM_ELEM_SMOOTH, !val);
 			break;
 		case EDGE_MODE_TAG_CREASE:
 		{
@@ -1977,7 +1977,7 @@ static int edbm_select_linked_exec(bContext *C, wmOperator *op)
 		BMFace *efa;
 
 		BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
-			BM_elem_flag_set(efa, BM_ELEM_TAG, (BM_elem_flag_test(efa, BM_ELEM_SELECT) &&
+			BM_elem_flag_set(bm, efa, BM_ELEM_TAG, (BM_elem_flag_test(efa, BM_ELEM_SELECT) &&
 			                                    !BM_elem_flag_test(efa, BM_ELEM_HIDDEN)));
 		}
 
@@ -2006,10 +2006,10 @@ static int edbm_select_linked_exec(bContext *C, wmOperator *op)
 	else {
 		BM_ITER_MESH (v, &iter, em->bm, BM_VERTS_OF_MESH) {
 			if (BM_elem_flag_test(v, BM_ELEM_SELECT)) {
-				BM_elem_flag_enable(v, BM_ELEM_TAG);
+				BM_elem_flag_enable(bm, v, BM_ELEM_TAG);
 			}
 			else {
-				BM_elem_flag_disable(v, BM_ELEM_TAG);
+				BM_elem_flag_disable(bm, v, BM_ELEM_TAG);
 			}
 		}
 
@@ -2384,7 +2384,7 @@ static int edbm_select_linked_flat_faces_exec(bContext *C, wmOperator *op)
 	int i;
 
 	BM_ITER_MESH (f, &iter, em->bm, BM_FACES_OF_MESH) {
-		BM_elem_flag_disable(f, BM_ELEM_TAG);
+		BM_elem_flag_disable(em->bm, f, BM_ELEM_TAG);
 	}
 
 	BM_ITER_MESH (f, &iter, em->bm, BM_FACES_OF_MESH) {
@@ -2403,7 +2403,7 @@ static int edbm_select_linked_flat_faces_exec(bContext *C, wmOperator *op)
 
 			BM_face_select_set(em->bm, f, TRUE);
 
-			BM_elem_flag_enable(f, BM_ELEM_TAG);
+			BM_elem_flag_enable(em->bm, f, BM_ELEM_TAG);
 
 			BM_ITER_ELEM (l, &liter, f, BM_LOOPS_OF_FACE) {
 				BM_ITER_ELEM (l2, &liter2, l, BM_LOOPS_OF_LOOP) {
@@ -2579,7 +2579,7 @@ static int edbm_select_next_loop_exec(bContext *C, wmOperator *UNUSED(op))
 	BMIter iter;
 	
 	BM_ITER_MESH (v, &iter, em->bm, BM_VERTS_OF_MESH) {
-		BM_elem_flag_disable(v, BM_ELEM_TAG);
+		BM_elem_flag_disable(em->bm, v, BM_ELEM_TAG);
 	}
 	
 	BM_ITER_MESH (f, &iter, em->bm, BM_FACES_OF_MESH) {
@@ -2588,7 +2588,7 @@ static int edbm_select_next_loop_exec(bContext *C, wmOperator *UNUSED(op))
 		
 		BM_ITER_ELEM (l, &liter, f, BM_LOOPS_OF_FACE) {
 			if (BM_elem_flag_test(l->v, BM_ELEM_SELECT)) {
-				BM_elem_flag_enable(l->next->v, BM_ELEM_TAG);
+				BM_elem_flag_enable(em->bm, l->next->v, BM_ELEM_TAG);
 				BM_vert_select_set(em->bm, l->v, FALSE);
 			}
 		}
@@ -2643,7 +2643,7 @@ static int edbm_region_to_loop_exec(bContext *C, wmOperator *UNUSED(op))
 			}
 			
 			if ((tot != totsel && totsel > 0) || (totsel == 1 && tot == 1))
-				BM_elem_flag_enable(l1->e, BM_ELEM_TAG);
+				BM_elem_flag_enable(em->bm, l1->e, BM_ELEM_TAG);
 		}
 	}
 
@@ -2750,16 +2750,16 @@ static int loop_find_regions(BMEditMesh *em, int selbigger)
 	BLI_smallhash_init(&visithash);
 	
 	BM_ITER_MESH (f, &iter, em->bm, BM_FACES_OF_MESH) {
-		BM_elem_flag_disable(f, BM_ELEM_TAG);
+		BM_elem_flag_disable(em->bm, f, BM_ELEM_TAG);
 	}
 
 	BM_ITER_MESH (e, &iter, em->bm, BM_EDGES_OF_MESH) {
 		if (BM_elem_flag_test(e, BM_ELEM_SELECT)) {
 			BLI_array_append(edges, e);
-			BM_elem_flag_enable(e, BM_ELEM_TAG);
+			BM_elem_flag_enable(em->bm, e, BM_ELEM_TAG);
 		}
 		else {
-			BM_elem_flag_disable(e, BM_ELEM_TAG);
+			BM_elem_flag_disable(em->bm, e, BM_ELEM_TAG);
 		}
 	}
 	
@@ -2803,9 +2803,9 @@ static int loop_find_regions(BMEditMesh *em, int selbigger)
 			int j;
 			
 			for (j = 0; j < tot; j++) {
-				BM_elem_flag_enable(region[j], BM_ELEM_TAG);
+				BM_elem_flag_enable(em->bm, region[j], BM_ELEM_TAG);
 				BM_ITER_ELEM (l, &liter, region[j], BM_LOOPS_OF_FACE) {
-					BM_elem_flag_disable(l->e, BM_ELEM_TAG);
+					BM_elem_flag_disable(em->bm, l->e, BM_ELEM_TAG);
 				}
 			}
 			

@@ -237,7 +237,7 @@ static EdgeLoopPair *edbm_ripsel_looptag_helper(BMesh *bm)
 
 		uid_start = uid;
 		while ((e = edbm_ripsel_edge_mark_step(v_step, uid))) {
-			BM_elem_flag_disable(e, BM_ELEM_SMOOTH);
+			BM_elem_flag_disable(bm, e, BM_ELEM_SMOOTH);
 			v_step = BM_edge_other_vert((e_step = e), v_step);
 			uid++; /* only different line */
 			tot++;
@@ -254,7 +254,7 @@ static EdgeLoopPair *edbm_ripsel_looptag_helper(BMesh *bm)
 		v_step = e_first->v1;
 
 		while ((e = edbm_ripsel_edge_mark_step(v_step, uid))) {
-			BM_elem_flag_disable(e, BM_ELEM_SMOOTH);
+			BM_elem_flag_disable(bm, e, BM_ELEM_SMOOTH);
 			v_step = BM_edge_other_vert((e_step = e), v_step);
 			uid--; /* only different line */
 			tot++;
@@ -556,11 +556,11 @@ static int edbm_rip_invoke__vert(bContext *C, wmOperator *op, wmEvent *event)
 	else if (BM_edge_is_manifold(e2)) {
 		l = e2->l;
 		e = BM_face_other_edge_loop(l->f, e2, v)->e;
-		BM_elem_flag_enable(e, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, e, BM_ELEM_TAG);
 
 		l = e2->l->radial_next;
 		e = BM_face_other_edge_loop(l->f, e2, v)->e;
-		BM_elem_flag_enable(e, BM_ELEM_TAG);
+		BM_elem_flag_enable(bm, e, BM_ELEM_TAG);
 	}
 
 	dist = FLT_MAX;
@@ -691,7 +691,7 @@ static int edbm_rip_invoke__edge(bContext *C, wmOperator *op, wmEvent *event)
 					l = BM_face_other_edge_loop(l->f, l->e, v);
 
 					if (l) {
-						BM_elem_flag_enable(l->e, BM_ELEM_TAG);
+						BM_elem_flag_enable(bm, l->e, BM_ELEM_TAG);
 					}
 				}
 			}
@@ -699,7 +699,7 @@ static int edbm_rip_invoke__edge(bContext *C, wmOperator *op, wmEvent *event)
 				e = BM_vert_other_disk_edge(v, e2);
 
 				if (e) {
-					BM_elem_flag_enable(e, BM_ELEM_TAG);
+					BM_elem_flag_enable(bm, e, BM_ELEM_TAG);
 				}
 			}
 		}
@@ -761,7 +761,7 @@ static int edbm_rip_invoke(bContext *C, wmOperator *op, wmEvent *event)
 
 	/* BM_ELEM_SELECT --> BM_ELEM_TAG */
 	BM_ITER_MESH (e, &iter, em->bm, BM_EDGES_OF_MESH) {
-		BM_elem_flag_set(e, BM_ELEM_TAG, BM_elem_flag_test(e, BM_ELEM_SELECT));
+		BM_elem_flag_set(bm, e, BM_ELEM_TAG, BM_elem_flag_test(e, BM_ELEM_SELECT));
 	}
 
 	/* split 2 main parts of this operator out into vertex and edge ripping */

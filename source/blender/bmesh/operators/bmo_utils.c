@@ -325,7 +325,7 @@ void bmo_recalc_face_normals_exec(BMesh *bm, BMOperator *op)
 	BMO_ITER (f, &siter, bm, op, "faces", BM_FACE) {
 
 		/* clear dirty flag */
-		BM_elem_flag_disable(f, BM_ELEM_TAG);
+		BM_elem_flag_disable(bm, f, BM_ELEM_TAG);
 
 		if (BMO_elem_flag_test(bm, f, FACE_VIS))
 			continue;
@@ -350,7 +350,7 @@ void bmo_recalc_face_normals_exec(BMesh *bm, BMOperator *op)
 		BMO_elem_flag_toggle(bm, startf, FACE_FLIP);
 
 		if (flagflip)
-			BM_elem_flag_toggle(startf, BM_ELEM_TAG);
+			BM_elem_flag_toggle(bm, startf, BM_ELEM_TAG);
 	}
 	
 	/* now that we've found our starting face, make all connected faces
@@ -382,12 +382,12 @@ void bmo_recalc_face_normals_exec(BMesh *bm, BMOperator *op)
 						
 						BMO_elem_flag_toggle(bm, l2->f, FACE_FLIP);
 						if (flagflip)
-							BM_elem_flag_toggle(l2->f, BM_ELEM_TAG);
+							BM_elem_flag_toggle(bm, l2->f, BM_ELEM_TAG);
 					}
 					else if (BM_elem_flag_test(l2->f, BM_ELEM_TAG) || BM_elem_flag_test(l->f, BM_ELEM_TAG)) {
 						if (flagflip) {
-							BM_elem_flag_disable(l->f, BM_ELEM_TAG);
-							BM_elem_flag_disable(l2->f, BM_ELEM_TAG);
+							BM_elem_flag_disable(bm, l->f, BM_ELEM_TAG);
+							BM_elem_flag_disable(bm, l2->f, BM_ELEM_TAG);
 						}
 					}
 					

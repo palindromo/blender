@@ -36,9 +36,9 @@ typedef struct BMEditSelection {
 /* geometry hiding code */
 #define BM_elem_hide_set(bm, ele, hide) _bm_elem_hide_set(bm, &(ele)->head, hide)
 void _bm_elem_hide_set(BMesh *bm, BMHeader *ele, int hide);
-void BM_vert_hide_set(BMVert *v, int hide);
-void BM_edge_hide_set(BMEdge *e, int hide);
-void BM_face_hide_set(BMFace *f, int hide);
+void BM_vert_hide_set(BMesh *bm, BMVert *v, int hide);
+void BM_edge_hide_set(BMesh *bm, BMEdge *e, int hide);
+void BM_face_hide_set(BMesh *bm, BMFace *f, int hide);
 
 /* Selection code */
 void BM_elem_select_set(BMesh *bm, BMElem *ele, int select);
