@@ -353,7 +353,7 @@ void bmo_pointmerge_exec(BMesh *bm, BMOperator *op)
 	BMO_ITER (v, &siter, bm, op, "verts", BM_VERT) {
 		if (!snapv) {
 			snapv = v;
-			copy_v3_v3(snapv->co, vec);
+			BM_vert_copy_v3(bm, snapv, vec);
 		}
 		else {
 			BMO_slot_map_ptr_insert(bm, &weldop, "targetmap", v, snapv);
@@ -405,8 +405,8 @@ void bmo_collapse_exec(BMesh *bm, BMOperator *op)
 
 		/* snap edges to a point.  for initial testing purposes anyway */
 		for (i = 0; i < tot; i++) {
-			copy_v3_v3(edges[i]->v1->co, min);
-			copy_v3_v3(edges[i]->v2->co, min);
+			BM_vert_copy_v3(bm, edges[i]->v1, min);
+			BM_vert_copy_v3(bm, edges[i]->v2, min);
 			
 			if (edges[i]->v1 != edges[0]->v1)
 				BMO_slot_map_ptr_insert(bm, &weldop, "targetmap", edges[i]->v1, edges[0]->v1);

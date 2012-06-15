@@ -165,7 +165,7 @@ void EMBM_project_snap_verts(bContext *C, ARegion *ar, Object *obedit, BMEditMes
 			mul_v3_m4v3(vec, obedit->obmat, eve->co);
 			project_float_noclip(ar, vec, mval);
 			if (snapObjectsContext(C, mval, &dist_dummy, vec, no_dummy, SNAP_NOT_OBEDIT)) {
-				mul_v3_m4v3(eve->co, obedit->imat, vec);
+				BM_vert_mul_m4v3(em->bm, eve, obedit->imat, vec);
 			}
 		}
 	}
@@ -2319,11 +2319,12 @@ static int edbm_blend_from_shape_exec(bContext *C, wmOperator *op)
 				sub_v3_v3v3(co, co, rco);
 			}
 			
-			madd_v3_v3fl(eve->co, co, blend);
+			mul_v3_fl(co, blend);
+			BM_vert_add_v3(em->bm, eve, co);
 		}
 		else {
 			/* in blend mode, we interpolate to the shape key */
-			interp_v3_v3v3(eve->co, eve->co, co, blend);
+			BM_vert_interp_v3v3(em->bm, eve, eve->co, co, blend);
 		}
 	}
 
@@ -4415,16 +4416,18 @@ static int edbm_noise_exec(bContext *C, wmOperator *op)
 				vec[1] = fac * (b2 - BLI_hnoise(tex->noisesize, eve->co[0], eve->co[1] + ofs, eve->co[2]));
 				vec[2] = fac * (b2 - BLI_hnoise(tex->noisesize, eve->co[0], eve->co[1], eve->co[2] + ofs));
 				
-				add_v3_v3(eve->co, vec);
+				BM_vert_add_v3(em->bm, eve, vec);
 			}
 		}
 	}
 	else {
 		BM_ITER_MESH (eve, &iter, em->bm, BM_VERTS_OF_MESH) {
 			if (BM_elem_flag_test(eve, BM_ELEM_SELECT)) {
-				float tin, dum;
+				float tin, dum, co[3];
 				externtex(ma->mtex[0], eve->co, &tin, &dum, &dum, &dum, &dum, 0);
-				eve->co[2] += fac * tin;
+				copy_v3_v3(co, eve->co);
+				co[2] += fac * tin;
+				BM_vert_copy_v3(em->bm, eve, co);
 			}
 		}
 	}

@@ -2137,7 +2137,7 @@ static float frac_along(const float a[3], const float b[3], const float v[3])
 static void sort_by_frac_along(ListBase *lst, BMEdge *e)
 {
 	KnifeVert *vcur, *vprev;
-	float *v1co, *v2co;
+	const float *v1co, *v2co;
 	Ref *cur = NULL, *prev = NULL, *next = NULL;
 
 	if (lst->first == lst->last)

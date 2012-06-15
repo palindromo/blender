@@ -241,9 +241,12 @@ static void editbmesh_apply_to_mirror(TransInfo *t)
 		
 		eve = td->extra;
 		if (eve) {
-			eve->co[0] = -td->loc[0];
-			eve->co[1] = td->loc[1];
-			eve->co[2] = td->loc[2];
+			BMEditMesh *em = BMEdit_FromObject(t->obedit);
+			float co[3];
+
+			copy_v3_v3(co, td->loc);
+			co[0] = -co[0];
+			BM_vert_copy_v3(em->bm, eve, co);
 		}
 		
 		if (td->flag & TD_MIRROR_EDGE) {

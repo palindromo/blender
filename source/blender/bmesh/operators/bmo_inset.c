@@ -406,7 +406,7 @@ void bmo_inset_exec(BMesh *bm, BMOperator *op)
 						}
 
 						/* apply the offset */
-						madd_v3_v3fl(v_split->co, tvec, thickness);
+						BM_vert_madd_v3fl(bm, v_split, tvec, thickness);
 					}
 
 					/* this saves expensive/slow glue check for common cases */
@@ -537,7 +537,7 @@ void bmo_inset_exec(BMesh *bm, BMOperator *op)
 
 		BM_ITER_MESH_INDEX (v, &iter, bm, BM_VERTS_OF_MESH, i) {
 			if (BM_elem_flag_test(v, BM_ELEM_TAG)) {
-				copy_v3_v3(v->co, varr_co[i]);
+				BM_vert_copy_v3(bm, v, varr_co[i]);
 			}
 		}
 		MEM_freeN(varr_co);

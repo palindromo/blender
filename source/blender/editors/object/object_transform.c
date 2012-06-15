@@ -710,7 +710,7 @@ static int object_origin_set_exec(bContext *C, wmOperator *op)
 			}
 			
 			BM_ITER_MESH (eve, &iter, em->bm, BM_VERTS_OF_MESH) {
-				sub_v3_v3(eve->co, cent);
+				BM_vert_sub_v3(em->bm, eve, cent);
 			}
 
 			EDBM_mesh_normals_update(em);

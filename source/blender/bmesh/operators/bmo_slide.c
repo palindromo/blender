@@ -104,7 +104,7 @@ void bmo_slide_vert_exec(BMesh *bm, BMOperator *op)
 		BMO_elem_flag_enable(bm, vertex, VERT_MARK);
 
 		/* Interpolate */
-		interp_v3_v3v3(vertex->co, vertex->co, other->co, distance_t);
+		BM_vert_interp_v3v3(bm, vertex, vertex->co, other->co, distance_t);
 	}
 
 	/* Return the new edge. The same previously marked with VERT_MARK */

@@ -1152,7 +1152,7 @@ BMesh *BME_bevel(BMEditMesh *em, float value, int res, int options, int defgrp_i
 			else {
 				d = value;
 			}
-			madd_v3_v3v3fl(v->co, vtd->org, vtd->vec, vtd->factor * (float)d);
+			BM_vert_madd_v3v3fl(bm, v, vtd->org, vtd->vec, vtd->factor * (float)d);
 		}
 	}
 

@@ -245,7 +245,7 @@ static void bm_merge_dm_transform(BMesh *bm, DerivedMesh *dm, float mat[4][4],
 		/* transform and tag verts */
 		BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
 			if (!BM_elem_flag_test(v, BM_ELEM_TAG)) {
-				mul_m4_v3(mat, v->co);
+				BM_vert_mul_m4(bm, v, mat);
 				BM_elem_flag_enable(bm, v, BM_ELEM_TAG);
 			}
 		}
@@ -269,7 +269,7 @@ static void bm_merge_dm_transform(BMesh *bm, DerivedMesh *dm, float mat[4][4],
 		/* transform and tag verts */
 		BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
 			if (!BM_elem_flag_test(v, BM_ELEM_TAG)) {
-				mul_m4_v3(mat, v->co);
+				BM_vert_mul_m4(bm, v, mat);
 				BM_elem_flag_enable(bm, v, BM_ELEM_TAG);
 			}
 		}
@@ -444,7 +444,7 @@ static DerivedMesh *arrayModifier_doArray(ArrayModifierData *amd,
 
 		/* apply transformation matrix */
 		BMO_ITER (v, &oiter, em->bm, &dupe_op, "newout", BM_VERT) {
-			mul_m4_v3(offset, v->co);
+			BM_vert_mul_m4(em->bm, v, offset);
 		}
 
 		if (amd->flags & MOD_ARR_MERGE) {

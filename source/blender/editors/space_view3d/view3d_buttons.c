@@ -450,7 +450,7 @@ static void v3d_editvertex_buts(uiLayout *layout, View3D *v3d, Object *ob, float
 
 				BM_ITER_MESH (eve, &iter, bm, BM_VERTS_OF_MESH) {
 					if (BM_elem_flag_test(eve, BM_ELEM_SELECT)) {
-						add_v3_v3(eve->co, median);
+						BM_vert_add_v3(bm, eve, median);
 					}
 				}
 

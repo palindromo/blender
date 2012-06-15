@@ -1184,8 +1184,10 @@ void EDBM_verts_mirror_apply(BMEditMesh *em, const int sel_from, const int sel_t
 			BMVert *mirr = EDBM_verts_mirror_get(em, v);
 			if (mirr) {
 				if (BM_elem_flag_test(mirr, BM_ELEM_SELECT) == sel_to) {
-					copy_v3_v3(mirr->co, v->co);
-					mirr->co[0] *= -1.0f;
+					float co[3];
+					copy_v3_v3(co, v->co);
+					co[0] *= -1.0f;
+					BM_vert_copy_v3(em->bm, mirr, co);
 				}
 			}
 		}

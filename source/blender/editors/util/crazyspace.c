@@ -55,7 +55,8 @@ typedef struct {
 } MappedUserData;
 
 #define TAN_MAKE_VEC(a, b, c)   a[0] = b[0] + 0.2f * (b[0] - c[0]); a[1] = b[1] + 0.2f * (b[1] - c[1]); a[2] = b[2] + 0.2f * (b[2] - c[2])
-static void set_crazy_vertex_quat(float *quat, float *v1, float *v2, float *v3, float *def1, float *def2, float *def3)
+static void set_crazy_vertex_quat(float *quat, float *v1, float *v2, float *v3,
+								  const float *def1, const float *def2, const float *def3)
 {
 	float vecu[3], vecv[3];
 	float q1[4], q2[4];
@@ -143,7 +144,8 @@ void crazyspace_set_quats_editmesh(BMEditMesh *em, float *origcos, float *mapped
 	BMVert *v;
 	BMIter iter, liter;
 	BMLoop *l;
-	float *v1, *v2, *v3, *co1, *co2, *co3;
+	float *v1, *v2, *v3;
+	const float *co1, *co2, *co3;
 	int *vert_table = MEM_callocN(sizeof(int) * em->bm->totvert, "vert_table");
 	int index = 0;
 

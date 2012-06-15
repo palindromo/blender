@@ -371,7 +371,7 @@ void bmo_create_uvsphere_exec(BMesh *bm, BMOperator *op)
 	/* and now do imat */
 	BM_ITER_MESH (eve, &iter, bm, BM_VERTS_OF_MESH) {
 		if (BMO_elem_flag_test(bm, eve, VERT_MARK)) {
-			mul_m4_v3(mat, eve->co);
+			BM_vert_mul_m4(bm, eve, mat);
 		}
 	}
 
@@ -443,7 +443,7 @@ void bmo_create_icosphere_exec(BMesh *bm, BMOperator *op)
 	/* must transform after because of sphere subdivision */
 	BM_ITER_MESH (v, &viter, bm, BM_VERTS_OF_MESH) {
 		if (BMO_elem_flag_test(bm, v, VERT_MARK)) {
-			mul_m4_v3(mat, v->co);
+			BM_vert_mul_m4(bm, v, mat);
 		}
 	}
 
@@ -469,11 +469,11 @@ void bmo_create_monkey_exec(BMesh *bm, BMOperator *op)
 
 		tv[monkeynv + i] = (fabsf(v[0] = -v[0]) < 0.001f) ?
 		                   tv[i] :
-		                   (eve = BM_vert_create(bm, v, NULL), mul_m4_v3(mat, eve->co), eve);
+		                   (eve = BM_vert_create(bm, v, NULL), BM_vert_mul_m4(bm, eve, mat), eve);
 
 		BMO_elem_flag_enable(bm, tv[monkeynv + i], VERT_MARK);
 
-		mul_m4_v3(mat, tv[i]->co);
+		BM_vert_mul_m4(bm, tv[i], mat);
 	}
 
 	for (i = 0; i < monkeynf; i++) {

@@ -241,6 +241,8 @@ extern "C" {
 #include "DNA_listBase.h" /* selection history uses */
 #include "DNA_customdata_types.h" /* BMesh struct in bmesh_class.h uses */
 
+#include "BLI_math.h" /* Vertex coordinate inline functions */
+
 #include <stdlib.h>
 #include <stdio.h>
 

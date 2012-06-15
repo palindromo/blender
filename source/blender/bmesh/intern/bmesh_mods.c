@@ -431,7 +431,7 @@ BMFace *BM_face_split_n(BMesh *bm, BMFace *f, BMVert *v1, BMVert *v2, float cos[
 			newv = bmesh_semv(bm, v2, e, &newe);
 			BLI_assert(newv != NULL);
 			/* bmesh_semv returns in newe the edge going from newv to tv */
-			copy_v3_v3(newv->co, cos[i]);
+			BM_vert_copy_v3(bm, newv, cos[i]);
 
 			/* interpolate the loop data for the loops with v==newv, using orig face */
 			for (j = 0; j < 2; j++) {
@@ -672,8 +672,8 @@ BMVert *BM_edge_split(BMesh *bm, BMEdge *e, BMVert *v, BMEdge **r_e, float perce
 
 	BLI_assert(nv != NULL);
 
-	sub_v3_v3v3(nv->co, v2->co, v->co);
-	madd_v3_v3v3fl(nv->co, v->co, nv->co, percent);
+	BM_vert_sub_v3v3(bm, nv, v2->co, v->co);
+	BM_vert_madd_v3v3fl(bm, nv, v->co, nv->co, percent);
 
 	if (r_e) {
 		(*r_e)->head.hflag = e->head.hflag;

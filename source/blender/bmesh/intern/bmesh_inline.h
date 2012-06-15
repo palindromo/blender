@@ -119,4 +119,71 @@ BLI_INLINE int _bm_elem_index_get(const BMHeader *head)
 	return head->index;
 }
 
+/************************* Vertex coordinates *************************/
+
+/* A small set of functions for changing vertex coordinates. All
+   changes should go through this API rather than directly setting
+   BMVert.co (needed for undo/redo) */
+
+/* TODO: could reduce this to just BM_vert_copy_v3() and let callers
+   do the math, not sure which is better. */
+
+BLI_INLINE void BM_vert_copy_v3(BMesh *UNUSED(bm), BMVert *v, const float co[3])
+{
+	copy_v3_v3(v->co, co);
+}
+
+BLI_INLINE void BM_vert_add_v3(BMesh *UNUSED(bm), BMVert *v, const float a[3])
+{
+	add_v3_v3(v->co, a);
+}
+
+BLI_INLINE void BM_vert_add_v3v3(BMesh *UNUSED(bm), BMVert *v,
+								 const float a[3], const float b[3])
+{
+	add_v3_v3v3(v->co, a, b);
+}
+
+BLI_INLINE void BM_vert_madd_v3fl(BMesh *UNUSED(bm), BMVert *v,
+								  const float a[3], float f)
+{
+	madd_v3_v3fl(v->co, a, f);
+}
+
+BLI_INLINE void BM_vert_madd_v3v3fl(BMesh *UNUSED(bm), BMVert *v,
+									const float a[3], const float b[3], float f)
+{
+	madd_v3_v3v3fl(v->co, a, b, f);
+}
+
+BLI_INLINE void BM_vert_sub_v3(BMesh *UNUSED(bm), BMVert *v, const float a[3])
+{
+	sub_v3_v3(v->co, a);
+}
+
+BLI_INLINE void BM_vert_sub_v3v3(BMesh *UNUSED(bm), BMVert *v,
+								 const float a[3], const float b[3])
+{
+	sub_v3_v3v3(v->co, a, b);
+}
+
+BLI_INLINE void BM_vert_mul_m4(BMesh *UNUSED(bm), BMVert *v,
+							   float mat[4][4])
+{
+	mul_v3_m4v3(v->co, mat, v->co);
+}
+
+BLI_INLINE void BM_vert_mul_m4v3(BMesh *UNUSED(bm), BMVert *v,
+								 float mat[4][4], const float a[3])
+{
+	mul_v3_m4v3(v->co, mat, a);
+}
+
+BLI_INLINE void BM_vert_interp_v3v3(BMesh *UNUSED(bm), BMVert *v,
+									const float a[3], const float b[3],
+									float factor)
+{
+	interp_v3_v3v3(v->co, a, b, factor);
+}
+
 #endif /* __BMESH_INLINE_H__ */

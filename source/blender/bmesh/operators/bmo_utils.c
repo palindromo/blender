@@ -60,7 +60,7 @@ void bmo_transform_exec(BMesh *bm, BMOperator *op)
 	BMO_slot_mat4_get(op, "mat", mat);
 
 	BMO_ITER (v, &iter, bm, op, "verts", BM_VERT) {
-		mul_m4_v3(mat, v->co);
+		BM_vert_mul_m4v3(bm, v, mat, v->co);
 	}
 }
 
@@ -421,7 +421,7 @@ void bmo_smooth_vert_exec(BMesh *bm, BMOperator *op)
 	BMEdge *e;
 	BLI_array_declare(cos);
 	float (*cos)[3] = NULL;
-	float *co, *co2, clipdist = BMO_slot_float_get(op, "clipdist");
+	float *co, clipdist = BMO_slot_float_get(op, "clipdist");
 	int i, j, clipx, clipy, clipz;
 	int xaxis, yaxis, zaxis;
 	
@@ -440,7 +440,7 @@ void bmo_smooth_vert_exec(BMesh *bm, BMOperator *op)
 		
 		j  = 0;
 		BM_ITER_ELEM (e, &iter, v, BM_EDGES_OF_VERT) {
-			co2 = BM_edge_other_vert(e, v)->co;
+			const float *co2 = BM_edge_other_vert(e, v)->co;
 			add_v3_v3v3(co, co, co2);
 			j += 1;
 		}
@@ -466,13 +466,18 @@ void bmo_smooth_vert_exec(BMesh *bm, BMOperator *op)
 
 	i = 0;
 	BMO_ITER (v, &siter, bm, op, "verts", BM_VERT) {
-		if (xaxis)
-			v->co[0] = cos[i][0];
-		if (yaxis)
-			v->co[1] = cos[i][1];
-		if (zaxis)
-			v->co[2] = cos[i][2];
+		float tmpco[3];
 
+		copy_v3_v3(tmpco, v->co);
+
+		if (xaxis)
+			tmpco[0] = cos[i][0];
+		if (yaxis)
+			tmpco[1] = cos[i][1];
+		if (zaxis)
+			tmpco[2] = cos[i][2];
+
+		BM_vert_copy_v3(bm, v, tmpco);
 		i++;
 	}
 
