@@ -33,6 +33,7 @@
 // #define USE_BMESH_HOLES
 
 struct BMesh;
+struct BMLog;
 struct BMVert;
 struct BMEdge;
 struct BMLoop;
@@ -68,6 +69,13 @@ typedef struct BMHeader {
 	            * - Used for edge/vert/face, check BMesh.elem_index_dirty for valid index values,
 	            *   this is abused by various tools which set it dirty.
 	            * - For loops this is used for sorting during tessellation. */
+
+	 /* Used by undo system. This is a unique ID (unique to any time
+	  * in the log, not necessarily unique throughout the full log
+	  * history) that never changes from time the element is created
+	  * to when it is deleted. If the element is re-created by the
+	  * undo system, it will still use the same ID. */
+	unsigned int id;
 
 	char htype; /* element geometric type (verts/edges/loops/faces) */
 	char hflag; /* this would be a CD layer, see below */
@@ -196,6 +204,9 @@ typedef struct BMesh {
 	BMFace *act_face;
 
 	ListBase errorstack;
+
+	/* Undo/redo log */
+	struct BMLog *log;
 
 	void *py_handle;
 } BMesh;
