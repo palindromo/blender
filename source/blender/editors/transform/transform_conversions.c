@@ -2113,6 +2113,8 @@ static void createTransEditVerts(bContext *C, TransInfo *t)
 				/* active */
 				if (eve == eve_act) tob->flag |= TD_ACTIVE;
 
+				bm_log_coord_set(bm, eve);
+
 				if (propmode) {
 					if (propmode & T_PROP_CONNECTED) {
 						tob->dist = dists[a];
