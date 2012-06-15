@@ -72,6 +72,48 @@
 
 #include "mesh_intern.h"
 
+static int edbm_undo_exec(bContext *C, wmOperator *UNUSED(op))
+{
+	Object *obedit = CTX_data_edit_object(C);
+	BMEditMesh *em = BMEdit_FromObject(obedit);
+	bm_undo(em->bm);
+
+	EDBM_update_generic(C, em, TRUE);
+	return OPERATOR_FINISHED;
+}
+
+void MESH_OT_undo(wmOperatorType *ot)
+{
+	/* identifiers */
+	ot->name = "BMesh Undo";
+	ot->idname = "MESH_OT_undo";
+
+	/* api callbacks */
+	ot->exec = edbm_undo_exec;
+	ot->poll = ED_operator_editmesh;
+}
+
+static int edbm_redo_exec(bContext *C, wmOperator *UNUSED(op))
+{
+	Object *obedit = CTX_data_edit_object(C);
+	BMEditMesh *em = BMEdit_FromObject(obedit);
+	bm_redo(em->bm);
+
+	EDBM_update_generic(C, em, TRUE);
+	return OPERATOR_FINISHED;
+}
+
+void MESH_OT_redo(wmOperatorType *ot)
+{
+	/* identifiers */
+	ot->name = "BMesh Redo";
+	ot->idname = "MESH_OT_redo";
+
+	/* api callbacks */
+	ot->exec = edbm_redo_exec;
+	ot->poll = ED_operator_editmesh;
+}
+
 /* allow accumulated normals to form a new direction but don't
  * accept direct opposite directions else they will cancel each other out */
 static void add_normal_aligned(float nor[3], const float add[3])

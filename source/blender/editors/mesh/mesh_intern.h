@@ -192,6 +192,9 @@ void MESH_OT_sticky_remove(struct wmOperatorType *ot);
 void MESH_OT_drop_named_image(struct wmOperatorType *ot);
 
 /* ************* bmesh_tools.c ***********/
+void MESH_OT_redo(struct wmOperatorType *ot);
+void MESH_OT_undo(struct wmOperatorType *ot);
+
 void MESH_OT_vert_connect(struct wmOperatorType *ot);
 void MESH_OT_edge_split(struct wmOperatorType *ot);
 void MESH_OT_extrude_region(struct wmOperatorType *ot);

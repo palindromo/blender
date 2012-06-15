@@ -58,6 +58,9 @@
 
 void ED_operatortypes_mesh(void)
 {
+	WM_operatortype_append(MESH_OT_undo);
+	WM_operatortype_append(MESH_OT_redo);
+
 	WM_operatortype_append(MESH_OT_select_all);
 	WM_operatortype_append(MESH_OT_select_interior_faces);
 	WM_operatortype_append(MESH_OT_select_more);
@@ -253,6 +256,10 @@ void ED_keymap_mesh(wmKeyConfig *keyconf)
 	
 	keymap = WM_keymap_find(keyconf, "Mesh", 0, 0);
 	keymap->poll = ED_operator_editmesh;
+
+	/* XXX: simple test for new bmesh undo/redo system */
+	WM_keymap_add_item(keymap, "MESH_OT_undo", AKEY, KM_PRESS, KM_CTRL, 0);
+	WM_keymap_add_item(keymap, "MESH_OT_redo", AKEY, KM_PRESS, KM_CTRL | KM_SHIFT, 0);
 	
 	WM_keymap_add_item(keymap, "MESH_OT_loopcut_slide", RKEY, KM_PRESS, KM_CTRL, 0);
 	WM_keymap_add_item(keymap, "MESH_OT_bevel", BKEY, KM_PRESS, KM_CTRL, 0);

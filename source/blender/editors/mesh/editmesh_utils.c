@@ -173,8 +173,8 @@ int EDBM_op_init(BMEditMesh *em, BMOperator *bmop, wmOperator *op, const char *f
 	}
 	
 	if (!em->emcopy)
-		em->emcopy = BMEdit_Copy(em);
-	em->emcopyusers++;
+		;//em->emcopy = BMEdit_Copy(em);
+	//em->emcopyusers++;
 
 	va_end(list);
 
@@ -214,12 +214,12 @@ int EDBM_op_finish(BMEditMesh *em, BMOperator *bmop, wmOperator *op, const int r
 	else {
 		em->emcopyusers--;
 		if (em->emcopyusers < 0) {
-			printf("warning: em->emcopyusers was less then zero.\n");
+			//printf("warning: em->emcopyusers was less then zero.\n");
 		}
 
 		if (em->emcopyusers <= 0) {
-			BMEdit_Free(em->emcopy);
-			MEM_freeN(em->emcopy);
+			//BMEdit_Free(em->emcopy);
+			//MEM_freeN(em->emcopy);
 			em->emcopy = NULL;
 		}
 
@@ -241,9 +241,9 @@ int EDBM_op_callf(BMEditMesh *em, wmOperator *op, const char *fmt, ...)
 		return 0;
 	}
 
-	if (!em->emcopy)
+	/*if (!em->emcopy)
 		em->emcopy = BMEdit_Copy(em);
-	em->emcopyusers++;
+		em->emcopyusers++;*/
 
 	BMO_op_exec(bm, &bmop);
 
@@ -265,9 +265,9 @@ int EDBM_op_call_and_selectf(BMEditMesh *em, wmOperator *op, const char *selects
 		return 0;
 	}
 
-	if (!em->emcopy)
+	/*if (!em->emcopy)
 		em->emcopy = BMEdit_Copy(em);
-	em->emcopyusers++;
+		em->emcopyusers++;*/
 
 	BMO_op_exec(bm, &bmop);
 
@@ -292,9 +292,9 @@ int EDBM_op_call_silentf(BMEditMesh *em, const char *fmt, ...)
 		return 0;
 	}
 
-	if (!em->emcopy)
+	/*if (!em->emcopy)
 		em->emcopy = BMEdit_Copy(em);
-	em->emcopyusers++;
+		em->emcopyusers++;*/
 
 	BMO_op_exec(bm, &bmop);
 
@@ -327,6 +327,7 @@ void EDBM_mesh_make(ToolSettings *ts, Scene *UNUSED(scene), Object *ob)
 	}
 
 	bm = BKE_mesh_to_bmesh(me, ob);
+	BM_mesh_enable_logging(bm);
 
 	if (me->edit_btmesh) {
 		/* this happens when switching shape keys */
@@ -605,9 +606,26 @@ void undo_push_mesh(bContext *C, const char *name)
 	 * though we could investigate the matter further. */
 	Object *obedit = CTX_data_edit_object(C);
 	BMEditMesh *em = BMEdit_FromObject(obedit);
+	BMesh *bm = em->bm;
+
 	em->ob = obedit;
 
 	undo_editmode_push(C, name, getEditMesh, free_undo, undoMesh_to_editbtMesh, editbtMesh_to_undoMesh, NULL);
+
+	if (bm->log) {
+		/* TODO */
+		/* Rename the current group */
+		/* Start a new group */
+		/* This is a bit ugly because the undo stack now "ends" on an
+		   empty group */
+		/* Also: this gets called even for non mesh actions,
+		   e.g. "Outliner click event" */
+		bm_log_group_description_set(bm_log_group_current(bm->log), name);
+		bm_log_group_create(bm->log, "(end)");
+
+		/* XXX: outliner bmesh log update, remove this */
+		WM_event_add_notifier(C, NC_SPACE | ND_SPACE_OUTLINER, NULL);
+	}
 }
 
 /* write comment here */
