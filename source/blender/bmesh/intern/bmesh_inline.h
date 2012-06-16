@@ -49,13 +49,15 @@ BLI_INLINE short _bm_elem_flag_test_bool(const BMHeader *head, const char hflag)
 	return (head->hflag & hflag) != 0;
 }
 
-BLI_INLINE void _bm_elem_flag_enable(BMesh *UNUSED(bm), BMHeader *head, const char hflag)
+BLI_INLINE void _bm_elem_flag_enable(BMesh *bm, BMHeader *head, const char hflag)
 {
+	bm_log_hflag_set(bm, head, head->hflag | hflag);
 	head->hflag |= hflag;
 }
 
-BLI_INLINE void _bm_elem_flag_disable(BMesh *UNUSED(bm), BMHeader *head, const char hflag)
+BLI_INLINE void _bm_elem_flag_disable(BMesh *bm, BMHeader *head, const char hflag)
 {
+	bm_log_hflag_set(bm, head, head->hflag & ~hflag);
 	head->hflag &= ~hflag;
 }
 
@@ -65,14 +67,18 @@ BLI_INLINE void _bm_elem_flag_set(BMesh *bm, BMHeader *head, const char hflag, c
 	else      _bm_elem_flag_disable(bm, head, hflag);
 }
 
-BLI_INLINE void _bm_elem_flag_toggle(BMesh *UNUSED(bm), BMHeader *head, const char hflag)
+BLI_INLINE void _bm_elem_flag_toggle(BMesh *bm, BMHeader *head, const char hflag)
 {
+	bm_log_hflag_set(bm, head, head->hflag ^ hflag);
 	head->hflag ^= hflag;
 }
 
-BLI_INLINE void _bm_elem_flag_merge(BMesh *UNUSED(bm), BMHeader *head_a, BMHeader *head_b)
+BLI_INLINE void _bm_elem_flag_merge(BMesh *bm, BMHeader *head_a, BMHeader *head_b)
 {
-	head_a->hflag = head_b->hflag = head_a->hflag | head_b->hflag;
+	char hflag = head_a->hflag | head_b->hflag;
+	bm_log_hflag_set(bm, head_a, hflag);
+	bm_log_hflag_set(bm, head_b, hflag);
+	head_a->hflag = head_b->hflag = hflag;
 }
 
 /**
@@ -128,62 +134,81 @@ BLI_INLINE int _bm_elem_index_get(const BMHeader *head)
 /* TODO: could reduce this to just BM_vert_copy_v3() and let callers
    do the math, not sure which is better. */
 
-BLI_INLINE void BM_vert_copy_v3(BMesh *UNUSED(bm), BMVert *v, const float co[3])
+BLI_INLINE void BM_vert_copy_v3(BMesh *bm, BMVert *v, const float co[3])
 {
+	bm_log_coord_set(bm, v);
 	copy_v3_v3(v->co, co);
 }
 
-BLI_INLINE void BM_vert_add_v3(BMesh *UNUSED(bm), BMVert *v, const float a[3])
+BLI_INLINE void BM_vert_add_v3(BMesh *bm, BMVert *v, const float a[3])
 {
-	add_v3_v3(v->co, a);
+	float co[3];
+	add_v3_v3v3(co, v->co, a);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_add_v3v3(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_add_v3v3(BMesh *bm, BMVert *v,
 								 const float a[3], const float b[3])
 {
-	add_v3_v3v3(v->co, a, b);
+	float co[3];
+	add_v3_v3v3(co, a, b);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_madd_v3fl(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_madd_v3fl(BMesh *bm, BMVert *v,
 								  const float a[3], float f)
 {
-	madd_v3_v3fl(v->co, a, f);
+	float co[3];
+	madd_v3_v3v3fl(co, v->co, a, f);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_madd_v3v3fl(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_madd_v3v3fl(BMesh *bm, BMVert *v,
 									const float a[3], const float b[3], float f)
 {
-	madd_v3_v3v3fl(v->co, a, b, f);
+	float co[3];
+	madd_v3_v3v3fl(co, a, b, f);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_sub_v3(BMesh *UNUSED(bm), BMVert *v, const float a[3])
+BLI_INLINE void BM_vert_sub_v3(BMesh *bm, BMVert *v, const float a[3])
 {
-	sub_v3_v3(v->co, a);
+	float co[3];
+	sub_v3_v3v3(co, v->co, a);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_sub_v3v3(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_sub_v3v3(BMesh *bm, BMVert *v,
 								 const float a[3], const float b[3])
 {
-	sub_v3_v3v3(v->co, a, b);
+	float co[3];
+	sub_v3_v3v3(co, a, b);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_mul_m4(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_mul_m4(BMesh *bm, BMVert *v,
 							   float mat[4][4])
 {
-	mul_v3_m4v3(v->co, mat, v->co);
+	float co[3];
+	mul_v3_m4v3(co, mat, v->co);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_mul_m4v3(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_mul_m4v3(BMesh *bm, BMVert *v,
 								 float mat[4][4], const float a[3])
 {
-	mul_v3_m4v3(v->co, mat, a);
+	float co[3];
+	mul_v3_m4v3(co, mat, a);
+	BM_vert_copy_v3(bm, v, co);
 }
 
-BLI_INLINE void BM_vert_interp_v3v3(BMesh *UNUSED(bm), BMVert *v,
+BLI_INLINE void BM_vert_interp_v3v3(BMesh *bm, BMVert *v,
 									const float a[3], const float b[3],
 									float factor)
 {
-	interp_v3_v3v3(v->co, a, b, factor);
+	float co[3];
+	interp_v3_v3v3(co, a, b, factor);
+	BM_vert_copy_v3(bm, v, co);
 }
 
 #endif /* __BMESH_INLINE_H__ */

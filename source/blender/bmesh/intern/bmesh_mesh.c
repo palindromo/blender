@@ -88,6 +88,11 @@ BMesh *BM_mesh_create(BMAllocTemplate *allocsize)
 	return bm;
 }
 
+void BM_mesh_enable_logging(BMesh *bm)
+{
+	bm->log = bm_log_create(bm);
+}
+
 /**
  * \brief BMesh Free Mesh Data
  *
@@ -183,6 +188,11 @@ void BM_mesh_free(BMesh *bm)
 
 		bpy_bm_generic_invalidate(bm->py_handle);
 		bm->py_handle = NULL;
+	}
+
+	if (bm->log) {
+		bm_log_free(bm->log);
+		MEM_freeN(bm->log);
 	}
 
 	MEM_freeN(bm);

@@ -853,6 +853,7 @@ BMesh *BM_mesh_copy(BMesh *bm_old)
 		vtable[i] = v2;
 		BM_elem_index_set(v, i); /* set_inline */
 		BM_elem_index_set(v2, i); /* set_inline */
+		v2->head.id = v->head.id;
 	}
 	bm_old->elem_index_dirty &= ~BM_VERT;
 	bm_new->elem_index_dirty &= ~BM_VERT;
@@ -871,6 +872,7 @@ BMesh *BM_mesh_copy(BMesh *bm_old)
 		etable[i] = e2;
 		BM_elem_index_set(e, i); /* set_inline */
 		BM_elem_index_set(e2, i); /* set_inline */
+		e2->head.id = e->head.id;
 	}
 	bm_old->elem_index_dirty &= ~BM_EDGE;
 	bm_new->elem_index_dirty &= ~BM_EDGE;
@@ -918,6 +920,7 @@ BMesh *BM_mesh_copy(BMesh *bm_old)
 		}
 
 		if (f == bm_old->act_face) bm_new->act_face = f2;
+		f2->head.id = f->head.id;
 	}
 	bm_old->elem_index_dirty &= ~BM_FACE;
 	bm_new->elem_index_dirty &= ~BM_FACE;
@@ -951,6 +954,8 @@ BMesh *BM_mesh_copy(BMesh *bm_old)
 			}
 		}
 	}
+
+	bm_new->log = bm_log_copy(bm_new, bm_old->log);
 
 	MEM_freeN(etable);
 	MEM_freeN(vtable);

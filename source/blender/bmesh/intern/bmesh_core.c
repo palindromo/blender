@@ -79,6 +79,9 @@ BMVert *BM_vert_create(BMesh *bm, const float co[3], const BMVert *example)
 
 	CustomData_bmesh_set_default(&bm->vdata, &v->head.data);
 	
+	bm_elem_id_assign(bm, &v->head);
+	bm_log_vert_create_kill(bm, v, FALSE);
+
 	if (example) {
 		int *keyi;
 
@@ -138,6 +141,9 @@ BMEdge *BM_edge_create(BMesh *bm, BMVert *v1, BMVert *v2, const BMEdge *example,
 	
 	if (example)
 		BM_elem_attrs_copy(bm, bm, example, e);
+
+	bm_elem_id_assign(bm, &e->head);
+	bm_log_edge_create_kill(bm, e, FALSE);
 	
 	BM_CHECK_ELEMENT(e);
 
@@ -334,6 +340,9 @@ BMFace *BM_face_create(BMesh *bm, BMVert **verts, BMEdge **edges, const int len,
 	lastl->next = startl;
 	
 	f->len = len;
+
+	bm_elem_id_assign(bm, &f->head);
+	bm_log_face_create_kill(bm, f, FALSE);
 	
 	BM_CHECK_ELEMENT(f);
 
@@ -491,6 +500,8 @@ static void bm_kill_only_vert(BMesh *bm, BMVert *v)
 
 	BM_select_history_remove(bm, v);
 
+	bm_elem_id_delete(bm, &v->head);
+
 	if (v->head.data)
 		CustomData_bmesh_free_block(&bm->vdata, &v->head.data);
 
@@ -508,6 +519,9 @@ static void bm_kill_only_edge(BMesh *bm, BMEdge *e)
 	bm->elem_index_dirty |= BM_EDGE;
 
 	BM_select_history_remove(bm, (BMElem *)e);
+
+	bm_log_edge_create_kill(bm, e, TRUE);
+	bm_elem_id_delete(bm, &e->head);
 
 	if (e->head.data)
 		CustomData_bmesh_free_block(&bm->edata, &e->head.data);
@@ -529,6 +543,8 @@ static void bm_kill_only_face(BMesh *bm, BMFace *f)
 	bm->elem_index_dirty |= BM_FACE;
 
 	BM_select_history_remove(bm, (BMElem *)f);
+
+	bm_elem_id_delete(bm, &f->head);
 
 	if (f->head.data)
 		CustomData_bmesh_free_block(&bm->pdata, &f->head.data);
@@ -607,6 +623,8 @@ void BM_face_kill(BMesh *bm, BMFace *f)
 	BMLoopList *ls, *ls_next;
 #endif
 
+	bm_log_face_create_kill(bm, f, TRUE);
+
 	BM_CHECK_ELEMENT(f);
 
 #ifdef USE_BMESH_HOLES
@@ -684,6 +702,8 @@ void BM_vert_kill(BMesh *bm, BMVert *v)
 			e = nexte;
 		}
 	}
+
+	bm_log_vert_create_kill(bm, v, TRUE);
 
 	bm_kill_only_vert(bm, v);
 }
@@ -1208,6 +1228,7 @@ BMFace *bmesh_sf(BMesh *bm, BMFace *f, BMEdge *e,
 	}
 
 	f2 = bm_face_create__sfme(bm, f);
+	bm_elem_id_assign(bm, &f2->head);
 	f1loop = bm_loop_create(bm, e->v2, e, f, v2loop);
 	f2loop = bm_loop_create(bm, e->v1, e, f2, v1loop);
 
@@ -1304,6 +1325,8 @@ BMFace *bmesh_sf(BMesh *bm, BMFace *f, BMEdge *e,
 	BM_CHECK_ELEMENT(e);
 	BM_CHECK_ELEMENT(f);
 	BM_CHECK_ELEMENT(f2);
+
+	bm_log_sf_jf(bm, f, f2, e, FALSE);
 	
 	return f2;
 }
@@ -1341,6 +1364,7 @@ BMVert *bmesh_semv(BMesh *bm, BMVert *tv, BMEdge *e, BMEdge **r_e)
 
 	valence2 = bmesh_disk_count(tv);
 
+	bm_log_lock(bm);
 	nv = BM_vert_create(bm, tv->co, tv);
 	ne = BM_edge_create(bm, nv, tv, e, FALSE);
 
@@ -1479,6 +1503,10 @@ BMVert *bmesh_semv(BMesh *bm, BMVert *tv, BMEdge *e, BMEdge **r_e)
 	BM_CHECK_ELEMENT(tv);
 
 	if (r_e) *r_e = ne;
+
+	bm_log_unlock(bm);
+	bm_log_semv(bm, tv, e, ne, nv);
+
 	return nv;
 }
 
@@ -1537,6 +1565,8 @@ BMEdge *bmesh_jekv(BMesh *bm, BMEdge *ke, BMVert *kv, const short check_edge_dou
 		}
 		else {
 			BMEdge *e_splice;
+
+			bm_log_lock(bm);
 
 			/* For verification later, count valence of ov and t */
 			valence1 = bmesh_disk_count(ov);
@@ -1634,6 +1664,8 @@ BMEdge *bmesh_jekv(BMesh *bm, BMEdge *ke, BMVert *kv, const short check_edge_dou
 					BM_edge_splice(bm, e_splice, oe);
 				}
 			}
+
+			bm_log_unlock(bm);
 
 			BM_CHECK_ELEMENT(ov);
 			BM_CHECK_ELEMENT(tv);
@@ -1738,6 +1770,8 @@ BMFace *bmesh_jf(BMesh *bm, BMFace *f1, BMFace *f2, BMEdge *e)
 		}
 	}
 
+	bm_log_sf_jf(bm, f1, f2, e, TRUE);
+
 	/* join the two loop */
 	f1loop->prev->next = f2loop->next;
 	f2loop->next->prev = f1loop->prev;
@@ -1794,6 +1828,9 @@ int BM_vert_splice(BMesh *bm, BMVert *v, BMVert *vtarget)
 		return FALSE;
 	}
 
+	bm_log_splice(bm, v, vtarget);
+	bm_log_lock(bm);
+
 	/* we can't modify the vert while iterating so first allocate an array of loops */
 	loops = BM_iter_as_arrayN(bm, BM_LOOPS_OF_VERT, v, &loops_tot);
 	for (i = 0; i < loops_tot; i++) {
@@ -1813,6 +1850,8 @@ int BM_vert_splice(BMesh *bm, BMVert *v, BMVert *vtarget)
 
 	/* v is unused now, and can be killed */
 	BM_vert_kill(bm, v);
+
+	bm_log_unlock(bm);
 
 	return TRUE;
 }
