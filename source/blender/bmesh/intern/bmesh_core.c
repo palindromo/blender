@@ -131,8 +131,8 @@ BMEdge *BM_edge_create(BMesh *bm, BMVert *v1, BMVert *v2, const BMEdge *example,
 
 	e->v1 = v1;
 	e->v2 = v2;
-	
-	BM_elem_flag_enable(bm, e, BM_ELEM_SMOOTH);
+
+	e->head.hflag |= BM_ELEM_SMOOTH;
 	
 	CustomData_bmesh_set_default(&bm->edata, &e->head.data);
 	
