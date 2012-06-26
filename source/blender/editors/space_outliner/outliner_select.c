@@ -704,6 +704,8 @@ int tree_element_type_active(bContext *C, Scene *scene, SpaceOops *soops,
 			return tree_element_active_sequence_dup(scene, te, tselem, set);
 		case TSE_KEYMAP_ITEM:
 			return tree_element_active_keymap_item(C, te, tselem, set);
+		case TSE_BMESH_LOG_ENTRY:
+			return te->flag & TE_ACTIVE;
 			
 	}
 	return 0;

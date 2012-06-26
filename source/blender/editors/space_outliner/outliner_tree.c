@@ -53,6 +53,7 @@
 #include "DNA_material_types.h"
 #include "DNA_mesh_types.h"
 #include "DNA_meta_types.h"
+#include "DNA_object_types.h"
 #include "DNA_particle_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_world_types.h"
@@ -68,6 +69,7 @@
 #include "BKE_main.h"
 #include "BKE_modifier.h"
 #include "BKE_sequencer.h"
+#include "BKE_tessmesh.h"
 
 #include "ED_armature.h"
 #include "ED_screen.h"
@@ -77,7 +79,11 @@
 
 #include "RNA_access.h"
 
+#include "bmesh.h"
+
 #include "outliner_intern.h"
+
+static void outliner_bm_log_groups_cb(BMLog *log, BMLogGroup *group, void *data);
 
 /* ********************************************************* */
 /* Defines */
@@ -1078,6 +1084,11 @@ static TreeElement *outliner_add_element(SpaceOops *soops, ListBase *lb, void *i
 		else 
 			te->flag |= TE_LAZY_CLOSED;
 	}
+	else if (type == TSE_BMESH_LOG_ENTRY) {
+		te->name = idv;
+		if (te->flag & TE_ACTIVE)
+			tselem->flag |= TSE_SELECTED;
+	}
 
 	return te;
 }
@@ -1560,6 +1571,19 @@ void outliner_build_tree(Main *mainvar, Scene *scene, SpaceOops *soops)
 			/* ten= */ outliner_add_element(soops, &soops->tree, (void *)km, NULL, TSE_KEYMAP, 0);
 		}
 	}
+	else if (soops->outlinevis == SO_BMESH_LOG) {
+		Object *ob = OBACT;
+		if (ob) {
+			Mesh *me = ob->data;
+			BMesh *bm = NULL;
+
+			if (ob && (ob->type == OB_MESH) && me->edit_btmesh)
+				bm = me->edit_btmesh->bm;
+
+			if (bm)
+				bm_log_groups_iter(bm, outliner_bm_log_groups_cb, soops);
+		}
+	}
 	else {
 		ten = outliner_add_element(soops, &soops->tree, OBACT, NULL, 0, 0);
 		if (ten) ten->directdata = BASACT;
@@ -1569,4 +1593,34 @@ void outliner_build_tree(Main *mainvar, Scene *scene, SpaceOops *soops)
 	outliner_filter_tree(soops, &soops->tree);
 }
 
+typedef struct {
+	SpaceOops *soops;
+	TreeElement *parent;
+} BMLogEntryCBData;
 
+static void outliner_bm_log_entry_cb(BMLog *log, BMLogEntry *entry, void *data_v)
+{
+	BMLogEntryCBData *data = data_v;
+	TreeElement *ten;
+
+	ten = outliner_add_element(data->soops, &data->parent->subtree,
+							   bm_log_entry_description(log, entry),
+							   data->parent, TSE_BMESH_LOG_ENTRY, 0);
+	ten->flag |= TE_FREE_NAME;
+}
+
+static void outliner_bm_log_groups_cb(BMLog *log, BMLogGroup *group, void *data)
+{
+	SpaceOops *soops = data;
+	BMLogEntryCBData child_data;
+
+	child_data.soops = soops;
+	child_data.parent = outliner_add_element(soops, &soops->tree,
+											 (void*)bm_log_group_description(group),
+											 NULL, TSE_BMESH_LOG_ENTRY, 0);
+
+	if (bm_log_group_current(log) == group)
+		child_data.parent->flag |= TE_ACTIVE;
+
+	bm_log_group_entries_iter(log, group, outliner_bm_log_entry_cb, &child_data);
+}

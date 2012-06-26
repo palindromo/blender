@@ -1258,6 +1258,7 @@ static void rna_def_space_outliner(BlenderRNA *brna)
 		{SO_DATABLOCKS, "DATABLOCKS", 0, "Datablocks", "Display raw datablocks"},
 		{SO_USERDEF, "USER_PREFERENCES", 0, "User Preferences", "Display the user preference datablocks"},
 		{SO_KEYMAP, "KEYMAPS", 0, "Key Maps", "Display keymap datablocks"},
+		{SO_BMESH_LOG, "BMESH_LOG", 0, "BMesh Log", "History of current BMesh (XXX: temporary view for debugging)"},
 		{0, NULL, 0, NULL, NULL}
 	};
 	
