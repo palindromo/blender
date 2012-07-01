@@ -13,7 +13,8 @@ SConscript(['audaspace/SConscript',
             'opennl/SConscript',
             'mikktspace/SConscript',
             'smoke/SConscript',
-            'raskter/SConscript'])
+            'raskter/SConscript',
+            'rangetree/SConscript'])
 
 # currently only contains headers
 # SConscript('container/SConscript')
