@@ -647,6 +647,9 @@ void ED_keymap_paint(wmKeyConfig *keyconf)
 	kmi = WM_keymap_add_item(keymap, "PAINT_OT_mask_flood_fill", IKEY, KM_PRESS, KM_CTRL, 0);
 	RNA_enum_set(kmi->ptr, "mode", PAINT_MASK_INVERT);
 
+	/* Toggle dynamic topology */
+	WM_keymap_add_item(keymap, "SCULPT_OT_dynamic_topology_toggle", DKEY, KM_PRESS, KM_CTRL, 0);
+
 	/* multires switch */
 	kmi = WM_keymap_add_item(keymap, "OBJECT_OT_subdivision_set", PAGEUPKEY, KM_PRESS, 0, 0);
 	RNA_int_set(kmi->ptr, "level", 1);
