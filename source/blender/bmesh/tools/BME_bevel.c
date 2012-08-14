@@ -161,7 +161,8 @@ static void BME_Bevel_Dissolve_Disk(BMesh *bm, BMVert *v)
 			do {
 				f = NULL;
 				if (BM_edge_is_manifold(e)) {
-					f = bmesh_jfke(bm, e->l->f, e->l->radial_next->f, e);
+					f = bmesh_jf(bm, e->l->f, e->l->radial_next->f, e);
+					BM_edge_kill(bm, e);
 				}
 				if (f) {
 					done = FALSE;
@@ -542,14 +543,16 @@ static BMLoop *BME_bevel_edge(BMesh *bm, BMLoop *l, float value, int UNUSED(opti
 			BM_face_split(bm, kl->f, kl->prev->v, kl->next->v, &nl, kl->prev->e, TRUE);
 			ke = kl->e;
 			/* BMESH-TODO: jfke doesn't handle customdata */
-			jf = bmesh_jfke(bm, kl->prev->radial_next->f, kl->f, kl->prev->e);
+			jf = bmesh_jf(bm, kl->prev->radial_next->f, kl->f, kl->prev->e);
+			BM_edge_kill(bm, e);
 			BM_vert_collapse_edge(bm, ke, kv, FALSE);
 		}
 		else {
 			BM_face_split(bm, kl->f, kl->next->next->v, kl->v, &nl, kl->next->e, TRUE);
 			ke = kl->e;
 			/* BMESH-TODO: jfke doesn't handle customdata */
-			jf = bmesh_jfke(bm, kl->next->radial_next->f, kl->f, kl->next->e);
+			jf = bmesh_jf(bm, kl->next->radial_next->f, kl->f, kl->next->e);
+			BM_edge_kill(bm, e);
 			BM_vert_collapse_edge(bm, ke, kv, FALSE);
 		}
 		/* find saved loop pointer */
@@ -588,14 +591,16 @@ static BMLoop *BME_bevel_edge(BMesh *bm, BMLoop *l, float value, int UNUSED(opti
 			BM_face_split(bm, kl->f, kl->prev->v, kl->next->v, &nl, kl->prev->e, TRUE);
 			ke = kl->e;
 			/* BMESH-TODO: jfke doesn't handle customdata */
-			jf = bmesh_jfke(bm, kl->prev->radial_next->f, kl->f, kl->prev->e);
+			jf = bmesh_jf(bm, kl->prev->radial_next->f, kl->f, kl->prev->e);
+			BM_edge_kill(bm, e);
 			BM_vert_collapse_edge(bm, ke, kv, FALSE);
 		}
 		else {
 			BM_face_split(bm, kl->f, kl->next->next->v, kl->v, &nl, kl->next->e, TRUE);
 			ke = kl->e;
 			/* BMESH-TODO: jfke doesn't handle customdata */
-			jf = bmesh_jfke(bm, kl->next->radial_next->f, kl->f, kl->next->e);
+			jf = bmesh_jf(bm, kl->next->radial_next->f, kl->f, kl->next->e);
+			BM_edge_kill(bm, e);
 			BM_vert_collapse_edge(bm, ke, kv, FALSE);
 		}
 		/* find saved loop pointer */

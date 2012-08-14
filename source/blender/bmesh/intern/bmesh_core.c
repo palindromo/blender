@@ -1143,11 +1143,13 @@ static BMFace *bm_face_create__sfme(BMesh *bm, BMFace *UNUSED(example))
 }
 
 /**
- * \brief Split Face Make Edge (SFME)
+ * \brief Split Face (SF)
  *
- * Takes as input two vertices in a single face. An edge is created which divides the original face
- * into two distinct regions. One of the regions is assigned to the original face and it is closed off.
- * The second region has a new face assigned to it.
+ * Takes as input an edge that connects two vertices in a single
+ * face. The edge is used to divide the original face into two
+ * distinct regions. One of the regions is assigned to the original
+ * face and it is closed off.  The second region has a new face
+ * assigned to it.
  *
  * \par Examples:
  * <pre>
@@ -1161,10 +1163,11 @@ static BMFace *bm_face_create__sfme(BMesh *bm, BMFace *UNUSED(example))
  *      +--------+           +--------+
  * </pre>
  *
- * \note the input vertices can be part of the same edge. This will
- * result in a two edged face. This is desirable for advanced construction
- * tools and particularly essential for edge bevel. Because of this it is
- * up to the caller to decide what to do with the extra edge.
+ * \note the input edge can be part of the existing face. This will
+ * result in a two-edged face. This is desirable for advanced
+ * construction tools and particularly essential for edge
+ * bevel. Because of this it is up to the caller to decide what to do
+ * with the extra edge.
  *
  * \note If \a holes is NULL, then both faces will lose
  * all holes from the original face.  Also, you cannot split between
@@ -1177,14 +1180,12 @@ static BMFace *bm_face_create__sfme(BMesh *bm, BMFace *UNUSED(example))
  *
  * \return A BMFace pointer
  */
-BMFace *bmesh_sfme(BMesh *bm, BMFace *f, BMVert *v1, BMVert *v2,
-                   BMLoop **r_l,
+BMFace *bmesh_sf(BMesh *bm, BMFace *f, BMEdge *e,
+				 BMLoop **r_l
 #ifdef USE_BMESH_HOLES
-                   ListBase *holes,
+				 , ListBase *holes
 #endif
-                   BMEdge *example,
-                   const short nodouble
-                   )
+				 )
 {
 #ifdef USE_BMESH_HOLES
 	BMLoopList *lst, *lst2;
@@ -1193,26 +1194,22 @@ BMFace *bmesh_sfme(BMesh *bm, BMFace *f, BMVert *v1, BMVert *v2,
 	BMFace *f2;
 	BMLoop *l_iter, *l_first;
 	BMLoop *v1loop = NULL, *v2loop = NULL, *f1loop = NULL, *f2loop = NULL;
-	BMEdge *e;
 	int i, len, f1len, f2len, first_loop_f1;
 
-	/* verify that v1 and v2 are in face */
+	/* verify that both endpoints of the edge are in the face */
 	len = f->len;
 	for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f); i < len; i++, l_iter = l_iter->next) {
-		if (l_iter->v == v1) v1loop = l_iter;
-		else if (l_iter->v == v2) v2loop = l_iter;
+		if (l_iter->v == e->v1) v1loop = l_iter;
+		else if (l_iter->v == e->v2) v2loop = l_iter;
 	}
 
 	if (!v1loop || !v2loop) {
 		return NULL;
 	}
 
-	/* allocate new edge between v1 and v2 */
-	e = BM_edge_create(bm, v1, v2, example, nodouble);
-
 	f2 = bm_face_create__sfme(bm, f);
-	f1loop = bm_loop_create(bm, v2, e, f, v2loop);
-	f2loop = bm_loop_create(bm, v1, e, f2, v1loop);
+	f1loop = bm_loop_create(bm, e->v2, e, f, v2loop);
+	f2loop = bm_loop_create(bm, e->v1, e, f2, v1loop);
 
 	f1loop->prev = v2loop->prev;
 	f2loop->prev = v1loop->prev;
@@ -1649,11 +1646,11 @@ BMEdge *bmesh_jekv(BMesh *bm, BMEdge *ke, BMVert *kv, const short check_edge_dou
 }
 
 /**
- * \brief Join Face Kill Edge (JFKE)
+ * \brief Join Face (JF)
  *
- * Takes two faces joined by a single 2-manifold edge and fuses them together.
- * The edge shared by the faces must not be connected to any other edges which have
- * Both faces in its radial cycle
+ * Takes two faces joined by a single edge and fuses them
+ * together. The edge shared by the faces must not be connected to any
+ * other edges which have both faces in its radial cycle.
  *
  * \par Examples:
  * <pre>
@@ -1679,18 +1676,13 @@ BMEdge *bmesh_jekv(BMesh *bm, BMEdge *ke, BMVert *kv, const short check_edge_dou
  *
  * \return A BMFace pointer
  */
-BMFace *bmesh_jfke(BMesh *bm, BMFace *f1, BMFace *f2, BMEdge *e)
+BMFace *bmesh_jf(BMesh *bm, BMFace *f1, BMFace *f2, BMEdge *e)
 {
 	BMLoop *l_iter, *f1loop = NULL, *f2loop = NULL;
 	int newlen = 0, i, f1len = 0, f2len = 0, edok;
 
 	/* can't join a face to itself */
 	if (f1 == f2) {
-		return NULL;
-	}
-
-	/* validate that edge is 2-manifold edge */
-	if (!BM_edge_is_manifold(e)) {
 		return NULL;
 	}
 
@@ -1764,24 +1756,15 @@ BMFace *bmesh_jfke(BMesh *bm, BMFace *f1, BMFace *f2, BMEdge *e)
 	newlen = f1->len;
 	for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f1); i < newlen; i++, l_iter = l_iter->next)
 		l_iter->f = f1;
+
+	/* remove f1 and f2 from the radial cycle of the edge */
+	bmesh_radial_loop_remove(f1loop, e);
+	bmesh_radial_loop_remove(f2loop, e);
 	
-	/* remove edge from the disk cycle of its two vertices */
-	bmesh_disk_edge_remove(f1loop->e, f1loop->e->v1);
-	bmesh_disk_edge_remove(f1loop->e, f1loop->e->v2);
-	
-	/* deallocate edge and its two loops as well as f2 */
-	BLI_mempool_free(bm->toolflagpool, f1loop->e->oflags);
-	BLI_mempool_free(bm->epool, f1loop->e);
-	bm->totedge--;
-	BLI_mempool_free(bm->lpool, f1loop);
-	bm->totloop--;
-	BLI_mempool_free(bm->lpool, f2loop);
-	bm->totloop--;
-	BLI_mempool_free(bm->toolflagpool, f2->oflags);
-	BLI_mempool_free(bm->fpool, f2);
-	bm->totface--;
-	/* account for both above */
-	bm->elem_index_dirty |= BM_EDGE | BM_FACE;
+	/* deallocate the two loops as well as f2 */
+	bm_kill_only_loop(bm, f1loop);
+	bm_kill_only_loop(bm, f2loop);
+	bm_kill_only_face(bm, f2);
 
 	BM_CHECK_ELEMENT(f1);
 

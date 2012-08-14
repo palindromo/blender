@@ -330,6 +330,7 @@ BMFace *BM_face_split(BMesh *bm, BMFace *f, BMVert *v1, BMVert *v2, BMLoop **r_l
 {
 	const int has_mdisp = CustomData_has_layer(&bm->ldata, CD_MDISPS);
 	BMFace *nf, *of;
+	BMEdge *e;
 
 	BLI_assert(v1 != v2);
 
@@ -337,11 +338,13 @@ BMFace *BM_face_split(BMesh *bm, BMFace *f, BMVert *v1, BMVert *v2, BMLoop **r_l
 	if (has_mdisp) {
 		of = BM_face_copy(bm, f, FALSE, FALSE);
 	}
+
+	e = BM_edge_create(bm, v1, v2, example, nodouble);
 	
 #ifdef USE_BMESH_HOLES
-	nf = bmesh_sfme(bm, f, v1, v2, r_l, NULL, example, nodouble);
+	nf = bmesh_sf(bm, f, e, r_l, NULL);
 #else
-	nf = bmesh_sfme(bm, f, v1, v2, r_l, example, nodouble);
+	nf = bmesh_sf(bm, f, e, r_l);
 #endif
 	
 	if (nf) {
@@ -408,11 +411,13 @@ BMFace *BM_face_split_n(BMesh *bm, BMFace *f, BMVert *v1, BMVert *v2, float cos[
 
 	if (!r_l)
 		r_l = &l_dummy;
+
+	e = BM_edge_create(bm, v1, v2, example, FALSE);
 	
 #ifdef USE_BMESH_HOLES
-	nf = bmesh_sfme(bm, f, v1, v2, r_l, NULL, example, FALSE);
+	nf = bmesh_sf(bm, f, e, r_l, NULL);
 #else
-	nf = bmesh_sfme(bm, f, v1, v2, r_l, example, FALSE);
+	nf = bmesh_sf(bm, f, e, r_l);
 #endif
 	/* bmesh_sfme returns in r_l a Loop for nf going from v1 to v2.
 	 * The radial_next is for f and goes from v2 to v1  */
