@@ -73,6 +73,7 @@ int    BLI_ghash_remove(GHash *gh, void *key, GHashKeyFreeFP keyfreefp, GHashVal
 void  *BLI_ghash_pop(GHash *gh, void *key, GHashKeyFreeFP keyfreefp);
 int    BLI_ghash_haskey(GHash *gh, void *key);
 int    BLI_ghash_size(GHash *gh);
+int    BLI_ghash_num_bytes(const GHash *gh);
 
 /* *** */
 

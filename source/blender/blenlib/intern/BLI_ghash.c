@@ -73,6 +73,35 @@ int BLI_ghash_size(GHash *gh)
 	return gh->nentries;
 }
 
+/* Return the total number of bytes used by a GHash
+ *
+ * Does not include the size of data pointed to by the GHash. For
+ * example, if the GHash's values are actually pointers to a struct, a
+ * combined total might be constructed as:
+ * 
+ * (BLI_ghash_num_bytes(gh) +
+ *      (sizeof(ValueStruct) *
+ *       BLI_ghash_size(gh)))
+ *
+ * TODO: verify this is implemented correctly
+ */
+int BLI_ghash_num_bytes(const GHash *gh)
+{
+	int i, num_bytes = sizeof(*gh);
+
+	num_bytes += BLI_mempool_num_bytes(gh->entrypool);
+	num_bytes += sizeof(*gh->buckets);
+
+	for (i = 0; i < gh->nbuckets; i++) {
+		Entry *e;
+
+		for (e = gh->buckets[i]; e; e = e->next)
+			num_bytes += sizeof(*e);
+	}
+
+	return num_bytes;
+}
+
 void BLI_ghash_insert(GHash *gh, void *key, void *val)
 {
 	unsigned int hash = gh->hashfp(key) % gh->nbuckets;
