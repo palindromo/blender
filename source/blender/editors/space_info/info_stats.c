@@ -64,6 +64,8 @@ typedef struct SceneStats {
 	int totlamp, totlampsel; 
 	int tottri, totmesh, totcurve;
 
+	int bmlog_size, bmlog_full_copy_size;
+
 	char infostr[512];
 } SceneStats;
 
@@ -159,6 +161,9 @@ static void stats_object_edit(Object *obedit, SceneStats *stats)
 		stats->totfacesel = em->bm->totfacesel;
 
 		stats->tottri = em->tottri;
+
+		stats->bmlog_size = bm_log_num_bytes(em->bm);
+		stats->bmlog_full_copy_size = bm_log_full_copy_num_bytes(em->bm);
 	}
 	else if (obedit->type == OB_ARMATURE) {
 		/* Armature Edit */
@@ -372,8 +377,10 @@ static void stats_string(Scene *scene)
 			s += sprintf(s, "(Key) ");
 
 		if (scene->obedit->type == OB_MESH) {
-			s += sprintf(s, "Verts:%d/%d | Edges:%d/%d | Faces:%d/%d | Tris:%d",
-		             stats->totvertsel, stats->totvert, stats->totedgesel, stats->totedge, stats->totfacesel, stats->totface, stats->tottri);
+			s += sprintf(s, "Verts:%d/%d | Edges:%d/%d | Faces:%d/%d | Tris:%d | BMLog:%.2fM | Copy:%.2fM",
+						 stats->totvertsel, stats->totvert, stats->totedgesel, stats->totedge, stats->totfacesel, stats->totface, stats->tottri,
+						 (stats->bmlog_size >> 10) / 1024.0,
+						 (stats->bmlog_full_copy_size >> 10) / 1024.0);
 		}
 		else if (scene->obedit->type == OB_ARMATURE) {
 			s += sprintf(s, "Verts:%d/%d | Bones:%d/%d", stats->totvertsel, stats->totvert, stats->totbonesel, stats->totbone);
