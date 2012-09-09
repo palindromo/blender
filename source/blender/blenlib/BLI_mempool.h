@@ -87,6 +87,8 @@ __attribute__((nonnull(1)))
 #endif
 ;
 
+int BLI_mempool_num_bytes(const BLI_mempool *pool);
+
 /** iteration stuff.  note: this may easy to produce bugs with **/
 /* private structure */
 typedef struct BLI_mempool_iter {

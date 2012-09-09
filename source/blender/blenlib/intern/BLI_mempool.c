@@ -237,6 +237,23 @@ void *BLI_mempool_calloc(BLI_mempool *pool)
 	return retval;
 }
 
+/* Return the total number of bytes used by a mempool
+ *
+ * TODO: verify this is implemented correctly
+ */
+int BLI_mempool_num_bytes(const BLI_mempool *pool)
+{
+	BLI_mempool_chunk *chunk;
+	int num_bytes = sizeof(*pool);
+
+	for (chunk = pool->chunks.first; chunk; chunk = chunk->next) {
+		num_bytes += sizeof(*chunk);
+		num_bytes += pool->csize;
+	}
+
+	return num_bytes;
+}
+
 /* doesnt protect against double frees, don't be stupid! */
 void BLI_mempool_free(BLI_mempool *pool, void *addr)
 {
