@@ -32,6 +32,7 @@ set(INC
 	../../../intern/guardedalloc
 	../../../extern/bullet2/src
 	../../../intern/opennl/extern
+	../../../intern/rangetree
 )
 
 set(INC_SYS
@@ -74,6 +75,8 @@ set(SRC
 	intern/bmesh_iterators.c
 	intern/bmesh_iterators.h
 	intern/bmesh_iterators_inline.h
+	intern/bmesh_log.c
+	intern/bmesh_log.h
 	intern/bmesh_marking.c
 	intern/bmesh_marking.h
 	intern/bmesh_mesh.c
