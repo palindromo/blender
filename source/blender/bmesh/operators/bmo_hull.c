@@ -26,10 +26,13 @@
 
 #include "MEM_guardedalloc.h"
 
+#include "BLI_array.h"
 #include "BLI_ghash.h"
 #include "BLI_listbase.h"
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
+
+#include "Bullet-C-Api.h"
 
 /*XXX: This operator doesn't work well (at all?) for flat surfaces with
  * >3 sides - creating overlapping faces at times.
@@ -516,8 +519,7 @@ static int hull_find_large_tetrahedron(BMesh *bm, BMOperator *op,
 
 /**************************** Final Output ****************************/
 
-static void hull_remove_overlapping(BMesh *bm, GHash *hull_triangles,
-                                    HullFinalEdges *final_edges)
+static void hull_remove_overlapping(BMesh *bm, GHash *hull_triangles)
 {
 	GHashIterator hull_iter;
 
@@ -534,7 +536,7 @@ static void hull_remove_overlapping(BMesh *bm, GHash *hull_triangles,
 			 * otherwise can't reuse it */
 			f_on_hull = TRUE;
 			BM_ITER_ELEM (e, &bm_iter2, f, BM_EDGES_OF_FACE) {
-				if (!hull_final_edges_lookup(final_edges, e->v1, e->v2)) {
+				if (!BMO_elem_flag_test(bm, e, HULL_FLAG_OUTPUT_GEOM)) {
 					f_on_hull = FALSE;
 					break;
 				}
@@ -553,8 +555,7 @@ static void hull_remove_overlapping(BMesh *bm, GHash *hull_triangles,
 	}
 }
 
-static void hull_mark_interior_elements(BMesh *bm, BMOperator *op,
-                                        HullFinalEdges *final_edges)
+static void hull_mark_interior_elements(BMesh *bm, BMOperator *op)
 {
 	BMEdge *e;
 	BMFace *f;
@@ -562,7 +563,7 @@ static void hull_mark_interior_elements(BMesh *bm, BMOperator *op,
 
 	/* Check for interior edges too */
 	BMO_ITER (e, &oiter, bm, op, "input", BM_EDGE) {
-		if (!hull_final_edges_lookup(final_edges, e->v1, e->v2))
+		if (!BMO_elem_flag_test(bm, e, HULL_FLAG_OUTPUT_GEOM))
 			BMO_elem_flag_enable(bm, e, HULL_FLAG_INTERIOR_ELE);
 	}
 
@@ -666,6 +667,107 @@ static void hull_tag_holes(BMesh *bm, BMOperator *op)
 	}
 }
 
+
+
+/******************************* Bullet *******************************/
+
+static void blah(BMesh *bm, BMOperator *op)
+{
+	BMVert **fv = NULL;
+	BLI_array_declare(fv);
+	BMEdge **fe = NULL;
+	BLI_array_declare(fe);
+	int *fvi = NULL;
+	BLI_array_declare(fvi);
+	BMVert *v;
+	BMVert **verts;
+	BMVert **input_verts;
+	plConvexHull hull;
+	BMElemF *ele;
+	BMOIter oiter;
+	float (*coords)[3];
+	int i, count = 0, num_input_verts;
+
+	num_input_verts = 0;
+	BMO_ITER (ele, &oiter, bm, op, "input", BM_ALL) {
+		BMO_elem_flag_enable(bm, ele, HULL_FLAG_INPUT);
+		
+		if (ele->head.htype == BM_VERT) {
+			/* Mark all vertices as interior to begin with */
+			BMO_elem_flag_enable(bm, ele, HULL_FLAG_INTERIOR_ELE);
+
+			/* Count number of vertices */
+			num_input_verts++;
+		}
+	}
+
+	coords = MEM_callocN(sizeof(*coords) * num_input_verts, AT);
+	input_verts = MEM_callocN(sizeof(*input_verts) * num_input_verts, AT);
+	i = 0;
+	BMO_ITER (v, &oiter, bm, op, "input", BM_VERT) {
+		copy_v3_v3(coords[i], v->co);
+		input_verts[i] = v;
+		i++;
+	}
+
+	hull = plConvexHullCompute(coords, num_input_verts);
+
+	count = plConvexHullNumVertices(hull);
+	verts = MEM_mallocN(sizeof(*verts) * count, AT);
+	for (i = 0; i < count; i++) {
+		float co[3];
+		int original_index;
+		plConvexHullGetVertex(hull, i, co, &original_index);
+		if (original_index >= 0 && original_index < num_input_verts)
+			verts[i] = input_verts[original_index];
+		else
+			verts[i] = BM_vert_create(bm, co, NULL);
+	}
+
+	count = plConvexHullNumFaces(hull);
+	for (i = 0; i < count; i++) {
+		int j, len = plConvexHullGetFaceSize(hull, i);
+
+		if (len > 2) {
+			BMFace *f;
+
+			BLI_array_empty(fv);
+			BLI_array_grow_items(fv, len);
+			BLI_array_empty(fe);
+			BLI_array_grow_items(fe, len);
+			BLI_array_empty(fvi);
+			BLI_array_grow_items(fvi, len);
+
+			plConvexHullGetFaceVertices(hull, i, fvi);
+
+			for (j = 0; j < len; j++) {
+				int next = (j + 1 == len ? 0 : j + 1);
+				fv[j] = verts[fvi[j]];
+				fe[j] = BM_edge_create(bm,
+									   verts[fvi[j]],
+									   verts[fvi[next]],
+									   NULL, TRUE);
+
+				/* Mark verts/edges for 'geomout' slot */
+				BMO_elem_flag_enable(bm, fv[j], HULL_FLAG_OUTPUT_GEOM);
+				BMO_elem_flag_enable(bm, fe[j], HULL_FLAG_OUTPUT_GEOM);
+			}
+
+			f = BM_face_create(bm, fv, fe, len, TRUE);
+			/* Mark face for 'geomout' slot and select */
+			BMO_elem_flag_enable(bm, f, HULL_FLAG_OUTPUT_GEOM);
+			BM_face_select_set(bm, f, TRUE);
+		}
+	}
+
+	BLI_array_free(fv);
+	BLI_array_free(fe);
+	BLI_array_free(fvi);
+	MEM_freeN(verts);
+	MEM_freeN(coords);
+	MEM_freeN(input_verts);
+}
+
 void bmo_convex_hull_exec(BMesh *bm, BMOperator *op)
 {
 	HullFinalEdges *final_edges;
@@ -675,70 +777,33 @@ void bmo_convex_hull_exec(BMesh *bm, BMOperator *op)
 	BMOIter oiter;
 	GHash *hull_triangles;
 
-	/* Verify that at least four verts in the input */
-	if (BMO_slot_get(op, "input")->len < 4) {
+	/* Verify that at least three verts are in the input */
+	if (BMO_slot_get(op, "input")->len < 3) {
 		BMO_error_raise(bm, op, BMERR_CONVEX_HULL_FAILED,
-		                "Requires at least four vertices");
+		                "Requires at least three vertices");
 		return;
 	}
 
-	/* Initialize the convex hull by building a tetrahedron. A
-	 * degenerate tetrahedron can cause problems, so report error and
-	 * fail if the result is coplanar */
-	if (hull_find_large_tetrahedron(bm, op, tetra)) {
-		BMO_error_raise(bm, op, BMERR_CONVEX_HULL_FAILED,
-		                "Input vertices are coplanar");
-		return;
-	}
+	/* TODO, XXX, etc */
+	blah(bm, op);
 
-	/* Tag input elements */
-	BMO_ITER (ele, &oiter, bm, op, "input", BM_ALL) {
-		BMO_elem_flag_enable(bm, ele, HULL_FLAG_INPUT);
-		
-		/* Mark all vertices as interior to begin with */
-		if (ele->head.htype == BM_VERT)
-			BMO_elem_flag_enable(bm, ele, HULL_FLAG_INTERIOR_ELE);
-	}
-
-	edge_pool = BLI_mempool_create(sizeof(HullBoundaryEdge), 128, 128, 0);
-	hull_pool = BLI_mempool_create(sizeof(HullTriangle), 128, 128, 0);
-	hull_triangles = BLI_ghash_ptr_new("hull_triangles");
-
-	/* Add tetrahedron triangles */
-	hull_add_tetrahedron(bm, hull_triangles, hull_pool, tetra);
-
-	/* Expand hull to cover new vertices outside the existing hull */
-	BMO_ITER (v, &oiter, bm, op, "input", BM_VERT) {
-		if (!BMO_elem_flag_test(bm, v, HULL_FLAG_TETRA_VERT)) {
-			GHash *outside = hull_triangles_v_outside(hull_triangles, v);
-			if (BLI_ghash_size(outside)) {
-				/* Expand hull and delete interior triangles */
-				add_point(bm, hull_triangles, hull_pool, edge_pool, outside, v);
-			}
-			BLI_ghash_free(outside, NULL, NULL);
-		}
-	}
-
-	BLI_mempool_destroy(edge_pool);
-	final_edges = hull_final_edges(hull_triangles);
-	
-	hull_mark_interior_elements(bm, op, final_edges);
+	hull_mark_interior_elements(bm, op);
 
 	/* Remove hull triangles covered by an existing face */
-	if (BMO_slot_bool_get(op, "use_existing_faces")) {
-		hull_remove_overlapping(bm, hull_triangles, final_edges);
+	/*if (BMO_slot_bool_get(op, "use_existing_faces")) {
+		hull_remove_overlapping(bm, hull_triangles);
 
 		hull_tag_holes(bm, op);
-	}
+		}*/
 
 	/* Done with edges */
-	hull_final_edges_free(final_edges);
+	//hull_final_edges_free(final_edges);
 
 	/* Convert hull triangles to BMesh faces */
-	hull_output_triangles(bm, hull_triangles);
-	BLI_mempool_destroy(hull_pool);
+	//hull_output_triangles(bm, hull_triangles);
+	//BLI_mempool_destroy(hull_pool);
 
-	BLI_ghash_free(hull_triangles, NULL, NULL);
+	//BLI_ghash_free(hull_triangles, NULL, NULL);
 
 	hull_tag_unused(bm, op);
 
