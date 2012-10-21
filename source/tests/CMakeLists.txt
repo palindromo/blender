@@ -338,3 +338,8 @@ add_test(export_fbx_all_objects ${TEST_BLENDER_EXE}
 	--md5_source=${TEST_OUT_DIR}/export_fbx_all_objects.fbx
 	--md5=b35eb2a9d0e73762ecae2278c25a38ac --md5_method=FILE
 )
+
+# Convex Hull operator
+add_test(convex_hull_operator ${TEST_BLENDER_EXE}
+	--python ${CMAKE_CURRENT_LIST_DIR}/bl_convex_hull_operator.py
+)
