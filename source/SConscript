@@ -3,6 +3,8 @@ Import ('env')
 
 SConscript(['blender/SConscript'])
 
+SConscript(['tests/SConscript'])
+
 if env['WITH_BF_GAMEENGINE']:
     SConscript (['gameengine/SConscript'])
 

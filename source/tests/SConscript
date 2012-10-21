@@ -1,0 +1,10 @@
+#!/usr/bin/python
+Import ('env')
+
+sources = env.Glob('*.c')
+
+incs = '. ../blender/blenlib ../blender/makesdna ../blender/bmesh '
+incs += '../blender/makerna ../blender/blenloader ../blender/blenkernel '
+incs += '../blender/windowmanager'
+
+env.BlenderLib ( 'bf_unit_test', sources, Split(incs), libtype=['core'], priority=[160] )

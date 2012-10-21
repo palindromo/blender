@@ -18,6 +18,31 @@
 #
 # ***** END GPL LICENSE BLOCK *****
 
+### C unit tests ###
+
+set(INC
+    .
+	../blender/blenlib
+	../blender/blenloader
+	../blender/bmesh
+	../blender/makesdna
+	../blender/makesrna
+	../blender/blenkernel
+	../blender/windowmanager
+)
+
+set(SRC
+    unit_test.c
+	unit_test_convex_hull.c
+
+	unit_test.h
+	unit_test_intern.h
+)
+
+blender_add_lib(bf_unit_test "${SRC}" "${INC}" "${INC_SYS}")
+
+### The rest of the file is for Python tests ###
+
 # --env-system-scripts allows to run without the install target. 
 
 # Use '--write-blend=/tmp/test.blend' to view output

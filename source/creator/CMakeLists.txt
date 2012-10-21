@@ -37,6 +37,7 @@ blender_include_dirs(
 	../blender/makesdna
 	../blender/gpu
 	../blender/windowmanager
+	../tests
 )
 
 if(WIN32)
@@ -942,6 +943,7 @@ endif()
 		cycles_subd
 		bf_intern_raskter
 		bf_intern_opencolorio
+		bf_unit_test
 	)
 
 	if(WITH_COMPOSITOR)
