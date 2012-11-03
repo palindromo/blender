@@ -129,6 +129,8 @@
 #  include "libmv-capi.h"
 #endif
 
+#include "unit_test.h"
+
 /* from buildinfo.c */
 #ifdef BUILD_DATE
 extern char build_date[];
@@ -183,6 +185,16 @@ static void blender_esc(int sig)
 		count++;
 	}
 }
+
+#ifndef NDEBUG
+static int unit_test(int UNUSED(argc), const char **UNUSED(argv), void *UNUSED(data))
+{
+	printf("Running unit tests\n");
+	run_unit_tests();
+	printf("All tests passed\n");
+	exit(0);
+}
+#endif
 
 static int print_version(int UNUSED(argc), const char **UNUSED(argv), void *UNUSED(data))
 {
@@ -1124,6 +1136,10 @@ static void setupArguments(bContext *C, bArgs *ba, SYS_SystemHandle *syshandle)
 	BLI_argsAdd(ba, 1, "-a", NULL, playback_doc, playback_mode, NULL);
 
 	BLI_argsAdd(ba, 1, "-d", "--debug", debug_doc, debug_mode, ba);
+
+#ifndef NDEBUG
+	BLI_argsAdd(ba, 1, NULL, "--unit-test", "\n\tRun C unit tests", unit_test, NULL);
+#endif
 
 #ifdef WITH_FFMPEG
 	BLI_argsAdd(ba, 1, NULL, "--debug-ffmpeg", "\n\tEnable debug messages from FFmpeg library", debug_mode_generic, (void *)G_DEBUG_FFMPEG);

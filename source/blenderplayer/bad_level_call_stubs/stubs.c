@@ -532,6 +532,9 @@ struct DualConMesh *dualcon(const struct DualConMesh *input_mesh,
 struct CCLDeviceInfo;
 struct CCLDeviceInfo *CCL_compute_device_list(int opencl) { return NULL; }
 
+/* tests */
+void run_unit_tests(void) {}
+
 /* compositor */
 void COM_execute(struct bNodeTree *editingtree, int rendering) {}
 
